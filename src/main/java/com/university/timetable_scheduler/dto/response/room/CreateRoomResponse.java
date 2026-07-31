@@ -1,0 +1,25 @@
+package com.university.timetable_scheduler.dto.response.room;
+
+import com.university.timetable_scheduler.dto.response.BaseResponse;
+import io.swagger.v3.oas.annotations.media.Schema;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
+@NoArgsConstructor
+@AllArgsConstructor
+@Getter
+@Setter
+public class CreateRoomResponse extends BaseResponse {
+    private Data data;
+
+    @Getter
+    @Setter
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Schema(name = "CreateRoomResponseData")
+    public static class Data {
+        private RoomResponse room;
+    }
+}

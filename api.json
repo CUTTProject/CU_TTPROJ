@@ -1,0 +1,5533 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Timetable Scheduler API",
+    "version": "1.0"
+  },
+  "servers": [
+    {
+      "url": "http://localhost:8080",
+      "description": "Generated server url"
+    }
+  ],
+  "security": [
+    {
+      "bearerAuth": []
+    }
+  ],
+  "paths": {
+    "/api/timeslots/update": {
+      "put": {
+        "tags": [
+          "timeslot-controller"
+        ],
+        "operationId": "updateTimeslot",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateTimeslotRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/UpdateTimeslotResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/students/update": {
+      "put": {
+        "tags": [
+          "student-controller"
+        ],
+        "operationId": "updateStudent",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateStudentRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/UpdateStudentResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/sections/update": {
+      "put": {
+        "tags": [
+          "section-controller"
+        ],
+        "operationId": "updateSection",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateSectionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/UpdateSectionResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/section-timeslots/update": {
+      "put": {
+        "tags": [
+          "section-timeslot-controller"
+        ],
+        "operationId": "updateSectionTimeslot",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateSectionTimeslotRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/UpdateSectionTimeslotResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/section-lecturers/update": {
+      "put": {
+        "tags": [
+          "section-lecturer-controller"
+        ],
+        "operationId": "updateSectionLecturer",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateSectionLecturerRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/UpdateSectionLecturerResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/schools/update": {
+      "put": {
+        "tags": [
+          "school-controller"
+        ],
+        "operationId": "updateSchool",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateSchoolRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/UpdateSchoolResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/rooms/update": {
+      "put": {
+        "tags": [
+          "room-controller"
+        ],
+        "operationId": "updateRoom",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateRoomRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/UpdateRoomResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/lecturers/update": {
+      "put": {
+        "tags": [
+          "lecturer-controller"
+        ],
+        "operationId": "updateLecturer",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateLecturerRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/UpdateLecturerResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/events/update": {
+      "put": {
+        "tags": [
+          "event-controller"
+        ],
+        "operationId": "updateEvent",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateEventRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/UpdateEventResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/enrollments/update": {
+      "put": {
+        "tags": [
+          "enrollment-controller"
+        ],
+        "summary": "Endpoint to update student enrollment data",
+        "operationId": "updateEnrollment",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateEnrollmentRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/UpdateEnrollmentResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/departments/update": {
+      "put": {
+        "tags": [
+          "department-controller"
+        ],
+        "operationId": "updateDepartment",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateDepartmentRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/UpdateDepartmentResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/courses/update": {
+      "put": {
+        "tags": [
+          "course-controller"
+        ],
+        "operationId": "updateCourse",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateCourseRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/UpdateCourseResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/academic-periods/update": {
+      "put": {
+        "tags": [
+          "academic-period-controller"
+        ],
+        "operationId": "updateAcademicPeriod",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateAcademicPeriodRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/UpdateAcademicPeriodResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/timeslots/create": {
+      "post": {
+        "tags": [
+          "timeslot-controller"
+        ],
+        "operationId": "createTimeslot",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateTimeslotRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreateTimeslotResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/time-table/generate": {
+      "post": {
+        "tags": [
+          "timetable-controller"
+        ],
+        "summary": "Run the timetable solver. Persist and return the generated schedule.",
+        "operationId": "generateTimetable",
+        "parameters": [
+          {
+            "name": "generateTimetableRequest",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/GenerateTimetableRequest"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/TimetableResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/time-table/bulk-upload": {
+      "post": {
+        "tags": [
+          "timetable-controller"
+        ],
+        "summary": "Bulk upload timetable from CSV. Provide the academicPeriodId of an existing academic period.",
+        "operationId": "bulkUploadTimetable",
+        "parameters": [
+          {
+            "name": "academicPeriodId",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "file": {
+                    "type": "string",
+                    "format": "binary"
+                  }
+                },
+                "required": [
+                  "file"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/BulkUploadTimetableResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/time-table/bulk-upload/array": {
+      "post": {
+        "tags": [
+          "timetable-controller"
+        ],
+        "summary": "Bulk upload timetable from a JSON array. academicSession is provided inside the request body.",
+        "operationId": "bulkUploadTimetableArray",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BulkUploadTimetableArrayRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/BulkUploadTimetableResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/students/create": {
+      "post": {
+        "tags": [
+          "student-controller"
+        ],
+        "operationId": "createStudent",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateStudentRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreateStudentResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/sections/create": {
+      "post": {
+        "tags": [
+          "section-controller"
+        ],
+        "operationId": "createSection",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateSectionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreateSectionResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/section-timeslots/create": {
+      "post": {
+        "tags": [
+          "section-timeslot-controller"
+        ],
+        "operationId": "createSectionTimeslot",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateSectionTimeslotRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreateSectionTimeslotResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/section-lecturers/create": {
+      "post": {
+        "tags": [
+          "section-lecturer-controller"
+        ],
+        "operationId": "createSectionLecturer",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateSectionLecturerRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreateSectionLecturerResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/schools/create": {
+      "post": {
+        "tags": [
+          "school-controller"
+        ],
+        "summary": "Endpoint to register a new school.",
+        "operationId": "createSchool",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateSchoolRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreateSchoolResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/rooms/create": {
+      "post": {
+        "tags": [
+          "room-controller"
+        ],
+        "operationId": "createRoom",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateRoomRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreateRoomResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/rooms/bulk-upload": {
+      "post": {
+        "tags": [
+          "room-controller"
+        ],
+        "summary": "Bulk upload rooms from a CSV file. Format - {roomNumber, roomBuilding, roomCapacity, roomType (LAB | SEMINAR_ROOM | LECTURE_THEATRE)} Upserts by 'roomNumber + roomBuilding' - existing rooms are updated, new ones are created.",
+        "operationId": "bulkUploadRooms",
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "file": {
+                    "type": "string",
+                    "format": "binary"
+                  }
+                },
+                "required": [
+                  "file"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/BulkUploadRoomResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/rooms/bulk-upload/array": {
+      "post": {
+        "tags": [
+          "room-controller"
+        ],
+        "summary": "Bulk upload rooms from a JSON array. Format - {roomNumber, roomBuilding, roomCapacity, roomType (LAB | SEMINAR_ROOM | LECTURE_THEATRE)} Upserts by 'roomNumber + roomBuilding' - existing rooms are updated, new ones are created.",
+        "operationId": "bulkUploadRoomsArray",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BulkUploadRoomArrayRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/BulkUploadRoomResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/lecturers/create": {
+      "post": {
+        "tags": [
+          "lecturer-controller"
+        ],
+        "operationId": "createLecturer",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateLecturerRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreateLecturerResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/events/create": {
+      "post": {
+        "tags": [
+          "event-controller"
+        ],
+        "operationId": "createEvent",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateEventRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreateEventResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/enrollments/create": {
+      "post": {
+        "tags": [
+          "enrollment-controller"
+        ],
+        "summary": "Endpoint to add student enrollment",
+        "operationId": "createEnrollment",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateEnrollmentRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreateEnrollmentResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/enrollments/bulk": {
+      "post": {
+        "tags": [
+          "enrollment-controller"
+        ],
+        "summary": "Endpoint to bulk create students and enroll them into sections",
+        "operationId": "bulkEnroll",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BulkEnrollmentRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/BulkEnrollmentResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/enrollments/bulk/upload": {
+      "post": {
+        "tags": [
+          "enrollment-controller"
+        ],
+        "summary": "Endpoint to bulk enroll students from a CSV file. Expected columns: studentMatriculationNumber, studentFirstName, studentLastName, studentEmail, studentLevel, studentDepartment, courseSection",
+        "operationId": "bulkEnrollFromFile",
+        "parameters": [
+          {
+            "name": "academicPeriodId",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "file": {
+                    "type": "string",
+                    "format": "binary"
+                  }
+                },
+                "required": [
+                  "file"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/BulkEnrollmentResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/departments/create": {
+      "post": {
+        "tags": [
+          "department-controller"
+        ],
+        "operationId": "createDepartment",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateDepartmentRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreateDepartmentResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/courses/create": {
+      "post": {
+        "tags": [
+          "course-controller"
+        ],
+        "operationId": "createCourse",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateCourseRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreateCourseResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/auth/login": {
+      "post": {
+        "tags": [
+          "auth-controller"
+        ],
+        "operationId": "login",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/LoginResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/academic-periods/create": {
+      "post": {
+        "tags": [
+          "academic-period-controller"
+        ],
+        "operationId": "createAcademicPeriod",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateAcademicPeriodRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreateAcademicPeriodResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/timeslots/read": {
+      "get": {
+        "tags": [
+          "timeslot-controller"
+        ],
+        "operationId": "readTimeslot",
+        "parameters": [
+          {
+            "name": "request",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/ReadTimeslotRequest"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReadTimeslotResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/time-table/download/pdf": {
+      "get": {
+        "tags": [
+          "timetable-controller"
+        ],
+        "summary": "Download the persisted timetable as a PDF. ",
+        "operationId": "downloadTimetablePdf",
+        "parameters": [
+          {
+            "name": "downloadTimetableRequest",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/DownloadTimetableRequest"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "string",
+                  "format": "byte"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/time-table/conflict-graph/download": {
+      "get": {
+        "tags": [
+          "timetable-controller"
+        ],
+        "summary": "Download the section conflict graph as a Graphviz DOT file. Open at https://dreampuf.github.io/GraphvizOnline/",
+        "operationId": "downloadConflictGraph",
+        "parameters": [
+          {
+            "name": "downloadConflictGraphRequest",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/DownloadConflictGraphRequest"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "string",
+                  "format": "byte"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/students/read": {
+      "get": {
+        "tags": [
+          "student-controller"
+        ],
+        "operationId": "readStudent",
+        "parameters": [
+          {
+            "name": "request",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/ReadStudentRequest"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReadStudentResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/sections/read": {
+      "get": {
+        "tags": [
+          "section-controller"
+        ],
+        "operationId": "readSection",
+        "parameters": [
+          {
+            "name": "request",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/ReadSectionRequest"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReadSectionResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/section-timeslots/read": {
+      "get": {
+        "tags": [
+          "section-timeslot-controller"
+        ],
+        "operationId": "readSectionTimeslot",
+        "parameters": [
+          {
+            "name": "request",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/ReadSectionTimeslotRequest"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReadSectionTimeslotResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/section-lecturers/read": {
+      "get": {
+        "tags": [
+          "section-lecturer-controller"
+        ],
+        "operationId": "readSectionLecturer",
+        "parameters": [
+          {
+            "name": "request",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/ReadSectionLecturerRequest"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReadSectionLecturerResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/schools/read": {
+      "get": {
+        "tags": [
+          "school-controller"
+        ],
+        "operationId": "readSchool",
+        "parameters": [
+          {
+            "name": "request",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/ReadSchoolRequest"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReadSchoolResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/rooms/read": {
+      "get": {
+        "tags": [
+          "room-controller"
+        ],
+        "operationId": "readRoom",
+        "parameters": [
+          {
+            "name": "request",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/ReadRoomRequest"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReadRoomResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/lecturers/read": {
+      "get": {
+        "tags": [
+          "lecturer-controller"
+        ],
+        "operationId": "readLecturer",
+        "parameters": [
+          {
+            "name": "request",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/ReadLecturerRequest"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReadLecturerResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/events/read": {
+      "get": {
+        "tags": [
+          "event-controller"
+        ],
+        "operationId": "readEvent",
+        "parameters": [
+          {
+            "name": "request",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/ReadEventRequest"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReadEventResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/enrollments/read": {
+      "get": {
+        "tags": [
+          "enrollment-controller"
+        ],
+        "summary": "Endpoint to read student(s) enrollment data",
+        "operationId": "readEnrollment",
+        "parameters": [
+          {
+            "name": "request",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/ReadEnrollmentRequest"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReadEnrollmentResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/departments/read": {
+      "get": {
+        "tags": [
+          "department-controller"
+        ],
+        "operationId": "readDepartment",
+        "parameters": [
+          {
+            "name": "request",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/ReadDepartmentRequest"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReadDepartmentResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/courses/read": {
+      "get": {
+        "tags": [
+          "course-controller"
+        ],
+        "operationId": "readCourse",
+        "parameters": [
+          {
+            "name": "readCourseRequest",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/ReadCourseRequest"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReadCourseResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/academic-periods/read": {
+      "get": {
+        "tags": [
+          "academic-period-controller"
+        ],
+        "operationId": "readAcademicPeriod",
+        "parameters": [
+          {
+            "name": "request",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/ReadAcademicPeriodRequest"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReadAcademicPeriodResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/timeslots/delete": {
+      "delete": {
+        "tags": [
+          "timeslot-controller"
+        ],
+        "operationId": "deleteTimeslot",
+        "parameters": [
+          {
+            "name": "request",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/DeleteTimeslotRequest"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeleteTimeslotResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/students/delete": {
+      "delete": {
+        "tags": [
+          "student-controller"
+        ],
+        "operationId": "deleteStudent",
+        "parameters": [
+          {
+            "name": "request",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/DeleteStudentRequest"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeleteStudentResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/sections/delete": {
+      "delete": {
+        "tags": [
+          "section-controller"
+        ],
+        "operationId": "deleteSection",
+        "parameters": [
+          {
+            "name": "request",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/DeleteSectionRequest"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeleteSectionResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/section-timeslots/delete": {
+      "delete": {
+        "tags": [
+          "section-timeslot-controller"
+        ],
+        "operationId": "deleteSectionTimeslot",
+        "parameters": [
+          {
+            "name": "request",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/DeleteSectionTimeslotRequest"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeleteSectionTimeslotResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/section-lecturers/delete": {
+      "delete": {
+        "tags": [
+          "section-lecturer-controller"
+        ],
+        "operationId": "deleteSectionLecturer",
+        "parameters": [
+          {
+            "name": "request",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/DeleteSectionLecturerRequest"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeleteSectionLecturerResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/schools/delete": {
+      "delete": {
+        "tags": [
+          "school-controller"
+        ],
+        "operationId": "deleteSchool",
+        "parameters": [
+          {
+            "name": "request",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/DeleteSchoolRequest"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeleteSchoolResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/rooms/delete": {
+      "delete": {
+        "tags": [
+          "room-controller"
+        ],
+        "operationId": "deleteRoom",
+        "parameters": [
+          {
+            "name": "request",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/DeleteRoomRequest"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeleteRoomResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/lecturers/delete": {
+      "delete": {
+        "tags": [
+          "lecturer-controller"
+        ],
+        "operationId": "deleteLecturer",
+        "parameters": [
+          {
+            "name": "request",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/DeleteLecturerRequest"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeleteLecturerResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/events/delete": {
+      "delete": {
+        "tags": [
+          "event-controller"
+        ],
+        "operationId": "deleteEvent",
+        "parameters": [
+          {
+            "name": "request",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/DeleteEventRequest"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeleteEventResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/enrollments/delete": {
+      "delete": {
+        "tags": [
+          "enrollment-controller"
+        ],
+        "summary": "Endpoint to delete student enrollment data",
+        "operationId": "deleteEnrollment",
+        "parameters": [
+          {
+            "name": "request",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/DeleteEnrollmentRequest"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeleteEnrollmentResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/departments/delete": {
+      "delete": {
+        "tags": [
+          "department-controller"
+        ],
+        "operationId": "deleteDepartment",
+        "parameters": [
+          {
+            "name": "request",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/DeleteDepartmentRequest"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeleteDepartmentResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/courses/delete": {
+      "delete": {
+        "tags": [
+          "course-controller"
+        ],
+        "operationId": "deleteCourse",
+        "parameters": [
+          {
+            "name": "deleteCourseResponse",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/DeleteCourseRequest"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeleteCourseResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/academic-periods/delete": {
+      "delete": {
+        "tags": [
+          "academic-period-controller"
+        ],
+        "operationId": "deleteAcademicPeriod",
+        "parameters": [
+          {
+            "name": "request",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/DeleteAcademicPeriodRequest"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeleteAcademicPeriodResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "UpdateTimeslotRequest": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "timeslotDay": {
+            "type": "string",
+            "enum": [
+              "SUNDAY",
+              "MONDAY",
+              "TUESDAY",
+              "WEDNESDAY",
+              "THURSDAY",
+              "FRIDAY",
+              "SATURDAY"
+            ]
+          },
+          "timeslotStartTime": {
+            "type": "string"
+          },
+          "timeslotEndTime": {
+            "type": "string"
+          },
+          "timeslotDuration": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id"
+        ]
+      },
+      "TimeslotResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "timeslotDay": {
+            "type": "string",
+            "enum": [
+              "SUNDAY",
+              "MONDAY",
+              "TUESDAY",
+              "WEDNESDAY",
+              "THURSDAY",
+              "FRIDAY",
+              "SATURDAY"
+            ]
+          },
+          "timeslotStartTime": {
+            "type": "string"
+          },
+          "timeslotEndTime": {
+            "type": "string"
+          },
+          "timeslotDuration": {
+            "type": "string"
+          },
+          "timeslotStatus": {
+            "type": "string",
+            "enum": [
+              "ACTIVE",
+              "INACTIVE"
+            ]
+          }
+        }
+      },
+      "UpdateTimeslotResponse": {
+        "type": "object",
+        "properties": {
+          "responseCode": {
+            "type": "string"
+          },
+          "error": {
+            "type": "boolean"
+          },
+          "timestamp": {
+            "type": "string"
+          },
+          "path": {
+            "type": "string"
+          },
+          "responseMessage": {
+            "type": "string"
+          },
+          "data": {
+            "$ref": "#/components/schemas/UpdateTimeslotResponseData"
+          }
+        }
+      },
+      "UpdateTimeslotResponseData": {
+        "type": "object",
+        "properties": {
+          "timeslot": {
+            "$ref": "#/components/schemas/TimeslotResponse"
+          }
+        }
+      },
+      "UpdateStudentRequest": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "studentFirstName": {
+            "type": "string"
+          },
+          "studentLastName": {
+            "type": "string"
+          },
+          "studentMatriculationNumber": {
+            "type": "string"
+          },
+          "studentEmail": {
+            "type": "string",
+            "format": "email"
+          },
+          "studentLevel": {
+            "type": "string",
+            "enum": [
+              "LEVEL_100",
+              "LEVEL_200",
+              "LEVEL_300",
+              "LEVEL_400",
+              "LEVEL_500"
+            ]
+          },
+          "studentDepartmentId": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "required": [
+          "id"
+        ]
+      },
+      "StudentResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "studentFirstName": {
+            "type": "string"
+          },
+          "studentLastName": {
+            "type": "string"
+          },
+          "studentMatriculationNumber": {
+            "type": "string"
+          },
+          "studentEmail": {
+            "type": "string"
+          },
+          "studentLevel": {
+            "type": "string",
+            "enum": [
+              "LEVEL_100",
+              "LEVEL_200",
+              "LEVEL_300",
+              "LEVEL_400",
+              "LEVEL_500"
+            ]
+          },
+          "studentDepartmentId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "studentStatus": {
+            "type": "string",
+            "enum": [
+              "ACTIVE",
+              "INACTIVE"
+            ]
+          }
+        }
+      },
+      "UpdateStudentResponse": {
+        "type": "object",
+        "properties": {
+          "responseCode": {
+            "type": "string"
+          },
+          "error": {
+            "type": "boolean"
+          },
+          "timestamp": {
+            "type": "string"
+          },
+          "path": {
+            "type": "string"
+          },
+          "responseMessage": {
+            "type": "string"
+          },
+          "data": {
+            "$ref": "#/components/schemas/UpdateStudentResponseData"
+          }
+        }
+      },
+      "UpdateStudentResponseData": {
+        "type": "object",
+        "properties": {
+          "student": {
+            "$ref": "#/components/schemas/StudentResponse"
+          }
+        }
+      },
+      "UpdateSectionRequest": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "sectionCourseId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "sectionName": {
+            "type": "string"
+          },
+          "sectionEnrollmentSize": {
+            "type": "string"
+          },
+          "sectionAcademicPeriodId": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "required": [
+          "id"
+        ]
+      },
+      "SectionResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "sectionCourseId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "sectionName": {
+            "type": "string"
+          },
+          "sectionEnrollmentSize": {
+            "type": "string"
+          },
+          "sectionAcademicPeriodId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "sectionStatus": {
+            "type": "string",
+            "enum": [
+              "ACTIVE",
+              "INACTIVE"
+            ]
+          }
+        }
+      },
+      "UpdateSectionResponse": {
+        "type": "object",
+        "properties": {
+          "responseCode": {
+            "type": "string"
+          },
+          "error": {
+            "type": "boolean"
+          },
+          "timestamp": {
+            "type": "string"
+          },
+          "path": {
+            "type": "string"
+          },
+          "responseMessage": {
+            "type": "string"
+          },
+          "data": {
+            "$ref": "#/components/schemas/UpdateSectionResponseData"
+          }
+        }
+      },
+      "UpdateSectionResponseData": {
+        "type": "object",
+        "properties": {
+          "section": {
+            "$ref": "#/components/schemas/SectionResponse"
+          }
+        }
+      },
+      "UpdateSectionTimeslotRequest": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "sectionTimeslotSectionId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "sectionTimeslotTimeslotId": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "required": [
+          "id"
+        ]
+      },
+      "SectionTimeslotResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "sectionTimeslotSectionId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "sectionTimeslotTimeslotId": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      },
+      "UpdateSectionTimeslotResponse": {
+        "type": "object",
+        "properties": {
+          "responseCode": {
+            "type": "string"
+          },
+          "error": {
+            "type": "boolean"
+          },
+          "timestamp": {
+            "type": "string"
+          },
+          "path": {
+            "type": "string"
+          },
+          "responseMessage": {
+            "type": "string"
+          },
+          "data": {
+            "$ref": "#/components/schemas/UpdateSectionTimeslotResponseData"
+          }
+        }
+      },
+      "UpdateSectionTimeslotResponseData": {
+        "type": "object",
+        "properties": {
+          "sectionTimeslot": {
+            "$ref": "#/components/schemas/SectionTimeslotResponse"
+          }
+        }
+      },
+      "UpdateSectionLecturerRequest": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "sectionLecturerSectionId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "sectionLecturerLecturerId": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "required": [
+          "id"
+        ]
+      },
+      "SectionLecturerResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "sectionLecturerSectionId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "sectionLecturerLecturerId": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      },
+      "UpdateSectionLecturerResponse": {
+        "type": "object",
+        "properties": {
+          "responseCode": {
+            "type": "string"
+          },
+          "error": {
+            "type": "boolean"
+          },
+          "timestamp": {
+            "type": "string"
+          },
+          "path": {
+            "type": "string"
+          },
+          "responseMessage": {
+            "type": "string"
+          },
+          "data": {
+            "$ref": "#/components/schemas/UpdateSectionLecturerResponseData"
+          }
+        }
+      },
+      "UpdateSectionLecturerResponseData": {
+        "type": "object",
+        "properties": {
+          "sectionLecturer": {
+            "$ref": "#/components/schemas/SectionLecturerResponse"
+          }
+        }
+      },
+      "UpdateSchoolRequest": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "schoolName": {
+            "type": "string"
+          },
+          "schoolAddress": {
+            "type": "string"
+          },
+          "schoolPhone": {
+            "type": "string"
+          },
+          "schoolStatus": {
+            "type": "string",
+            "enum": [
+              "ACTIVE",
+              "INACTIVE",
+              "SUSPENDED"
+            ]
+          }
+        },
+        "required": [
+          "id"
+        ]
+      },
+      "SchoolResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "schoolName": {
+            "type": "string"
+          },
+          "schoolAddress": {
+            "type": "string"
+          },
+          "schoolAdminEmail": {
+            "type": "string"
+          },
+          "schoolPhone": {
+            "type": "string"
+          },
+          "schoolStatus": {
+            "type": "string",
+            "enum": [
+              "ACTIVE",
+              "INACTIVE",
+              "SUSPENDED"
+            ]
+          }
+        }
+      },
+      "UpdateSchoolResponse": {
+        "type": "object",
+        "properties": {
+          "responseCode": {
+            "type": "string"
+          },
+          "error": {
+            "type": "boolean"
+          },
+          "timestamp": {
+            "type": "string"
+          },
+          "path": {
+            "type": "string"
+          },
+          "responseMessage": {
+            "type": "string"
+          },
+          "data": {
+            "$ref": "#/components/schemas/UpdateSchoolResponseData"
+          }
+        }
+      },
+      "UpdateSchoolResponseData": {
+        "type": "object",
+        "properties": {
+          "school": {
+            "$ref": "#/components/schemas/SchoolResponse"
+          }
+        }
+      },
+      "UpdateRoomRequest": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "roomBuilding": {
+            "type": "string"
+          },
+          "roomNumber": {
+            "type": "string"
+          },
+          "roomCapacity": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 1
+          },
+          "roomType": {
+            "type": "string",
+            "enum": [
+              "LAB",
+              "CLASS",
+              "SEMINAR_ROOM",
+              "LECTURE_THEATRE"
+            ]
+          }
+        },
+        "required": [
+          "id"
+        ]
+      },
+      "RoomResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "roomBuilding": {
+            "type": "string"
+          },
+          "roomNumber": {
+            "type": "string"
+          },
+          "roomCapacity": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "roomType": {
+            "type": "string",
+            "enum": [
+              "LAB",
+              "CLASS",
+              "SEMINAR_ROOM",
+              "LECTURE_THEATRE"
+            ]
+          },
+          "roomStatus": {
+            "type": "string",
+            "enum": [
+              "ACTIVE",
+              "INACTIVE"
+            ]
+          }
+        }
+      },
+      "UpdateRoomResponse": {
+        "type": "object",
+        "properties": {
+          "responseCode": {
+            "type": "string"
+          },
+          "error": {
+            "type": "boolean"
+          },
+          "timestamp": {
+            "type": "string"
+          },
+          "path": {
+            "type": "string"
+          },
+          "responseMessage": {
+            "type": "string"
+          },
+          "data": {
+            "$ref": "#/components/schemas/UpdateRoomResponseData"
+          }
+        }
+      },
+      "UpdateRoomResponseData": {
+        "type": "object",
+        "properties": {
+          "room": {
+            "$ref": "#/components/schemas/RoomResponse"
+          }
+        }
+      },
+      "UpdateLecturerRequest": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "lecturerStaffNumber": {
+            "type": "string"
+          },
+          "lecturerFirstName": {
+            "type": "string"
+          },
+          "lecturerLastName": {
+            "type": "string"
+          },
+          "lecturerEmail": {
+            "type": "string",
+            "format": "email"
+          },
+          "lecturerDepartmentId": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "required": [
+          "id"
+        ]
+      },
+      "LecturerResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "lecturerStaffNumber": {
+            "type": "string"
+          },
+          "lecturerFirstName": {
+            "type": "string"
+          },
+          "lecturerLastName": {
+            "type": "string"
+          },
+          "lecturerEmail": {
+            "type": "string"
+          },
+          "lecturerDepartmentId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "lecturerStatus": {
+            "type": "string",
+            "enum": [
+              "ACTIVE",
+              "INACTIVE"
+            ]
+          }
+        }
+      },
+      "UpdateLecturerResponse": {
+        "type": "object",
+        "properties": {
+          "responseCode": {
+            "type": "string"
+          },
+          "error": {
+            "type": "boolean"
+          },
+          "timestamp": {
+            "type": "string"
+          },
+          "path": {
+            "type": "string"
+          },
+          "responseMessage": {
+            "type": "string"
+          },
+          "data": {
+            "$ref": "#/components/schemas/UpdateLecturerResponseData"
+          }
+        }
+      },
+      "UpdateLecturerResponseData": {
+        "type": "object",
+        "properties": {
+          "lecturer": {
+            "$ref": "#/components/schemas/LecturerResponse"
+          }
+        }
+      },
+      "UpdateEventRequest": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "eventSectionId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "eventDuration": {
+            "type": "string"
+          },
+          "eventType": {
+            "type": "string",
+            "enum": [
+              "CLASS",
+              "LAB"
+            ]
+          }
+        },
+        "required": [
+          "id"
+        ]
+      },
+      "EventResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "eventSectionId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "eventDuration": {
+            "type": "string"
+          },
+          "eventType": {
+            "type": "string",
+            "enum": [
+              "CLASS",
+              "LAB"
+            ]
+          },
+          "eventStatus": {
+            "type": "string",
+            "enum": [
+              "ACTIVE",
+              "INACTIVE"
+            ]
+          }
+        }
+      },
+      "UpdateEventResponse": {
+        "type": "object",
+        "properties": {
+          "responseCode": {
+            "type": "string"
+          },
+          "error": {
+            "type": "boolean"
+          },
+          "timestamp": {
+            "type": "string"
+          },
+          "path": {
+            "type": "string"
+          },
+          "responseMessage": {
+            "type": "string"
+          },
+          "data": {
+            "$ref": "#/components/schemas/UpdateEventResponseData"
+          }
+        }
+      },
+      "UpdateEventResponseData": {
+        "type": "object",
+        "properties": {
+          "event": {
+            "$ref": "#/components/schemas/EventResponse"
+          }
+        }
+      },
+      "UpdateEnrollmentRequest": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "enrollmentStudentId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "enrollmentSectionId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "enrollmentAcademicPeriodId": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "required": [
+          "id"
+        ]
+      },
+      "EnrollmentResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "enrollmentStudentId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "enrollmentSectionId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "enrollmentStatus": {
+            "type": "string",
+            "enum": [
+              "ACTIVE",
+              "INACTIVE"
+            ]
+          }
+        }
+      },
+      "UpdateEnrollmentResponse": {
+        "type": "object",
+        "properties": {
+          "responseCode": {
+            "type": "string"
+          },
+          "error": {
+            "type": "boolean"
+          },
+          "timestamp": {
+            "type": "string"
+          },
+          "path": {
+            "type": "string"
+          },
+          "responseMessage": {
+            "type": "string"
+          },
+          "data": {
+            "$ref": "#/components/schemas/UpdateEnrollmentResponseData"
+          }
+        }
+      },
+      "UpdateEnrollmentResponseData": {
+        "type": "object",
+        "properties": {
+          "enrollment": {
+            "$ref": "#/components/schemas/EnrollmentResponse"
+          }
+        }
+      },
+      "UpdateDepartmentRequest": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "departmentName": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id"
+        ]
+      },
+      "DepartmentResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "departmentName": {
+            "type": "string"
+          },
+          "departmentStatus": {
+            "type": "string",
+            "enum": [
+              "ACTIVE",
+              "INACTIVE"
+            ]
+          }
+        }
+      },
+      "UpdateDepartmentResponse": {
+        "type": "object",
+        "properties": {
+          "responseCode": {
+            "type": "string"
+          },
+          "error": {
+            "type": "boolean"
+          },
+          "timestamp": {
+            "type": "string"
+          },
+          "path": {
+            "type": "string"
+          },
+          "responseMessage": {
+            "type": "string"
+          },
+          "data": {
+            "$ref": "#/components/schemas/UpdateDepartmentResponseData"
+          }
+        }
+      },
+      "UpdateDepartmentResponseData": {
+        "type": "object",
+        "properties": {
+          "department": {
+            "$ref": "#/components/schemas/DepartmentResponse"
+          }
+        }
+      },
+      "UpdateCourseRequest": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "courseCode": {
+            "type": "string",
+            "maxLength": 20,
+            "minLength": 0
+          },
+          "courseName": {
+            "type": "string"
+          },
+          "courseDescription": {
+            "type": "string"
+          },
+          "courseUnit": {
+            "type": "integer",
+            "format": "int32",
+            "maximum": 10,
+            "minimum": 1
+          },
+          "courseLevel": {
+            "type": "string",
+            "enum": [
+              "LEVEL_100",
+              "LEVEL_200",
+              "LEVEL_300",
+              "LEVEL_400",
+              "LEVEL_500"
+            ]
+          }
+        },
+        "required": [
+          "id"
+        ]
+      },
+      "CourseResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "courseCode": {
+            "type": "string"
+          },
+          "courseName": {
+            "type": "string"
+          },
+          "courseDescription": {
+            "type": "string"
+          },
+          "courseUnit": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "courseLevel": {
+            "type": "string",
+            "enum": [
+              "LEVEL_100",
+              "LEVEL_200",
+              "LEVEL_300",
+              "LEVEL_400",
+              "LEVEL_500"
+            ]
+          },
+          "courseStatus": {
+            "type": "string",
+            "enum": [
+              "ACTIVE",
+              "INACTIVE"
+            ]
+          }
+        }
+      },
+      "UpdateCourseResponse": {
+        "type": "object",
+        "properties": {
+          "responseCode": {
+            "type": "string"
+          },
+          "error": {
+            "type": "boolean"
+          },
+          "timestamp": {
+            "type": "string"
+          },
+          "path": {
+            "type": "string"
+          },
+          "responseMessage": {
+            "type": "string"
+          },
+          "data": {
+            "$ref": "#/components/schemas/UpdateCourseResponseData"
+          }
+        }
+      },
+      "UpdateCourseResponseData": {
+        "type": "object",
+        "properties": {
+          "course": {
+            "$ref": "#/components/schemas/CourseResponse"
+          }
+        }
+      },
+      "UpdateAcademicPeriodRequest": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "academicPeriodName": {
+            "type": "string"
+          },
+          "academicPeriodSession": {
+            "type": "string"
+          },
+          "academicPeriodSemester": {
+            "type": "string"
+          },
+          "academicPeriodStartDate": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "academicPeriodEndDate": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "id"
+        ]
+      },
+      "AcademicPeriodResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "academicPeriodName": {
+            "type": "string"
+          },
+          "academicPeriodSession": {
+            "type": "string"
+          },
+          "academicPeriodSemester": {
+            "type": "string"
+          },
+          "academicPeriodStartDate": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "academicPeriodEndDate": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "academicPeriodStatus": {
+            "type": "string",
+            "enum": [
+              "ACTIVE",
+              "INACTIVE"
+            ]
+          }
+        }
+      },
+      "UpdateAcademicPeriodResponse": {
+        "type": "object",
+        "properties": {
+          "responseCode": {
+            "type": "string"
+          },
+          "error": {
+            "type": "boolean"
+          },
+          "timestamp": {
+            "type": "string"
+          },
+          "path": {
+            "type": "string"
+          },
+          "responseMessage": {
+            "type": "string"
+          },
+          "data": {
+            "$ref": "#/components/schemas/UpdateAcademicPeriodResponseData"
+          }
+        }
+      },
+      "UpdateAcademicPeriodResponseData": {
+        "type": "object",
+        "properties": {
+          "academicPeriod": {
+            "$ref": "#/components/schemas/AcademicPeriodResponse"
+          }
+        }
+      },
+      "CreateTimeslotRequest": {
+        "type": "object",
+        "properties": {
+          "timeslotDay": {
+            "type": "string",
+            "enum": [
+              "SUNDAY",
+              "MONDAY",
+              "TUESDAY",
+              "WEDNESDAY",
+              "THURSDAY",
+              "FRIDAY",
+              "SATURDAY"
+            ]
+          },
+          "timeslotStartTime": {
+            "type": "string"
+          },
+          "timeslotEndTime": {
+            "type": "string"
+          },
+          "timeslotDuration": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "timeslotDay",
+          "timeslotDuration",
+          "timeslotEndTime",
+          "timeslotStartTime"
+        ]
+      },
+      "CreateTimeslotResponse": {
+        "type": "object",
+        "properties": {
+          "responseCode": {
+            "type": "string"
+          },
+          "error": {
+            "type": "boolean"
+          },
+          "timestamp": {
+            "type": "string"
+          },
+          "path": {
+            "type": "string"
+          },
+          "responseMessage": {
+            "type": "string"
+          },
+          "data": {
+            "$ref": "#/components/schemas/CreateTimeslotResponseData"
+          }
+        }
+      },
+      "CreateTimeslotResponseData": {
+        "type": "object",
+        "properties": {
+          "timeslot": {
+            "$ref": "#/components/schemas/TimeslotResponse"
+          }
+        }
+      },
+      "GenerateTimetableRequest": {
+        "type": "object",
+        "properties": {
+          "academicPeriodId": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "academicPeriodId"
+        ]
+      },
+      "TimetableEntryDTO": {
+        "type": "object",
+        "properties": {
+          "eventId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "courseCode": {
+            "type": "string"
+          },
+          "courseName": {
+            "type": "string"
+          },
+          "sectionName": {
+            "type": "string"
+          },
+          "lecturerName": {
+            "type": "string"
+          },
+          "day": {
+            "type": "string"
+          },
+          "startTime": {
+            "type": "string"
+          },
+          "endTime": {
+            "type": "string"
+          },
+          "room": {
+            "type": "string"
+          },
+          "durationMinutes": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "eventType": {
+            "type": "string"
+          }
+        }
+      },
+      "TimetableResponse": {
+        "type": "object",
+        "properties": {
+          "responseCode": {
+            "type": "string"
+          },
+          "error": {
+            "type": "boolean"
+          },
+          "timestamp": {
+            "type": "string"
+          },
+          "path": {
+            "type": "string"
+          },
+          "responseMessage": {
+            "type": "string"
+          },
+          "entries": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TimetableEntryDTO"
+            }
+          },
+          "totalEvents": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "scheduledEvents": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "BulkUploadTimetableResponse": {
+        "type": "object",
+        "properties": {
+          "responseCode": {
+            "type": "string"
+          },
+          "error": {
+            "type": "boolean"
+          },
+          "timestamp": {
+            "type": "string"
+          },
+          "path": {
+            "type": "string"
+          },
+          "responseMessage": {
+            "type": "string"
+          }
+        }
+      },
+      "BulkTimetableRow": {
+        "type": "object",
+        "properties": {
+          "courseCode": {
+            "type": "string",
+            "minLength": 1
+          },
+          "courseTitle": {
+            "type": "string",
+            "minLength": 1
+          },
+          "courseUnit": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "courseLevel": {
+            "type": "string",
+            "minLength": 1
+          },
+          "department": {
+            "type": "string",
+            "minLength": 1
+          },
+          "lecturerStaffNumber": {
+            "type": "string",
+            "minLength": 1
+          },
+          "lecturerFirstName": {
+            "type": "string",
+            "minLength": 1
+          },
+          "lecturerLastName": {
+            "type": "string",
+            "minLength": 1
+          },
+          "lecturerEmail": {
+            "type": "string",
+            "format": "email",
+            "minLength": 1
+          },
+          "sectionName": {
+            "type": "string",
+            "minLength": 1
+          },
+          "sectionEnrollmentSize": {
+            "type": "string",
+            "minLength": 1
+          },
+          "eventDurationMinutes": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "eventType": {
+            "type": "string",
+            "minLength": 1
+          },
+          "rooms": {
+            "type": "string"
+          },
+          "timeslot": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "courseCode",
+          "courseLevel",
+          "courseTitle",
+          "courseUnit",
+          "department",
+          "eventDurationMinutes",
+          "eventType",
+          "lecturerEmail",
+          "lecturerFirstName",
+          "lecturerLastName",
+          "lecturerStaffNumber",
+          "sectionEnrollmentSize",
+          "sectionName"
+        ]
+      },
+      "BulkUploadTimetableArrayRequest": {
+        "type": "object",
+        "properties": {
+          "academicPeriodId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "rows": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BulkTimetableRow"
+            },
+            "minItems": 1
+          }
+        },
+        "required": [
+          "academicPeriodId",
+          "rows"
+        ]
+      },
+      "CreateStudentRequest": {
+        "type": "object",
+        "properties": {
+          "studentFirstName": {
+            "type": "string",
+            "minLength": 1
+          },
+          "studentLastName": {
+            "type": "string",
+            "minLength": 1
+          },
+          "studentMatriculationNumber": {
+            "type": "string",
+            "minLength": 1
+          },
+          "studentEmail": {
+            "type": "string",
+            "format": "email",
+            "minLength": 1
+          },
+          "studentLevel": {
+            "type": "string",
+            "enum": [
+              "LEVEL_100",
+              "LEVEL_200",
+              "LEVEL_300",
+              "LEVEL_400",
+              "LEVEL_500"
+            ]
+          },
+          "studentDepartmentId": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "required": [
+          "studentDepartmentId",
+          "studentEmail",
+          "studentFirstName",
+          "studentLastName",
+          "studentLevel",
+          "studentMatriculationNumber"
+        ]
+      },
+      "CreateStudentResponse": {
+        "type": "object",
+        "properties": {
+          "responseCode": {
+            "type": "string"
+          },
+          "error": {
+            "type": "boolean"
+          },
+          "timestamp": {
+            "type": "string"
+          },
+          "path": {
+            "type": "string"
+          },
+          "responseMessage": {
+            "type": "string"
+          },
+          "data": {
+            "$ref": "#/components/schemas/CreateStudentResponseData"
+          }
+        }
+      },
+      "CreateStudentResponseData": {
+        "type": "object",
+        "properties": {
+          "student": {
+            "$ref": "#/components/schemas/StudentResponse"
+          }
+        }
+      },
+      "CreateSectionRequest": {
+        "type": "object",
+        "properties": {
+          "sectionCourseId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "sectionName": {
+            "type": "string",
+            "minLength": 1
+          },
+          "sectionEnrollmentSize": {
+            "type": "string"
+          },
+          "sectionAcademicPeriodId": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "required": [
+          "sectionAcademicPeriodId",
+          "sectionCourseId",
+          "sectionName"
+        ]
+      },
+      "CreateSectionResponse": {
+        "type": "object",
+        "properties": {
+          "responseCode": {
+            "type": "string"
+          },
+          "error": {
+            "type": "boolean"
+          },
+          "timestamp": {
+            "type": "string"
+          },
+          "path": {
+            "type": "string"
+          },
+          "responseMessage": {
+            "type": "string"
+          },
+          "data": {
+            "$ref": "#/components/schemas/CreateSectionResponseData"
+          }
+        }
+      },
+      "CreateSectionResponseData": {
+        "type": "object",
+        "properties": {
+          "section": {
+            "$ref": "#/components/schemas/SectionResponse"
+          }
+        }
+      },
+      "CreateSectionTimeslotRequest": {
+        "type": "object",
+        "properties": {
+          "sectionTimeslotSectionId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "sectionTimeslotTimeslotId": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "required": [
+          "sectionTimeslotSectionId",
+          "sectionTimeslotTimeslotId"
+        ]
+      },
+      "CreateSectionTimeslotResponse": {
+        "type": "object",
+        "properties": {
+          "responseCode": {
+            "type": "string"
+          },
+          "error": {
+            "type": "boolean"
+          },
+          "timestamp": {
+            "type": "string"
+          },
+          "path": {
+            "type": "string"
+          },
+          "responseMessage": {
+            "type": "string"
+          },
+          "data": {
+            "$ref": "#/components/schemas/CreateSectionTimeslotResponseData"
+          }
+        }
+      },
+      "CreateSectionTimeslotResponseData": {
+        "type": "object",
+        "properties": {
+          "sectionTimeslot": {
+            "$ref": "#/components/schemas/SectionTimeslotResponse"
+          }
+        }
+      },
+      "CreateSectionLecturerRequest": {
+        "type": "object",
+        "properties": {
+          "sectionLecturerSectionId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "sectionLecturerLecturerId": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "required": [
+          "sectionLecturerLecturerId",
+          "sectionLecturerSectionId"
+        ]
+      },
+      "CreateSectionLecturerResponse": {
+        "type": "object",
+        "properties": {
+          "responseCode": {
+            "type": "string"
+          },
+          "error": {
+            "type": "boolean"
+          },
+          "timestamp": {
+            "type": "string"
+          },
+          "path": {
+            "type": "string"
+          },
+          "responseMessage": {
+            "type": "string"
+          },
+          "data": {
+            "$ref": "#/components/schemas/CreateSectionLecturerResponseData"
+          }
+        }
+      },
+      "CreateSectionLecturerResponseData": {
+        "type": "object",
+        "properties": {
+          "sectionLecturer": {
+            "$ref": "#/components/schemas/SectionLecturerResponse"
+          }
+        }
+      },
+      "CreateSchoolRequest": {
+        "type": "object",
+        "properties": {
+          "schoolName": {
+            "type": "string",
+            "minLength": 1
+          },
+          "schoolAddress": {
+            "type": "string",
+            "minLength": 1
+          },
+          "schoolAdminEmail": {
+            "type": "string",
+            "format": "email",
+            "minLength": 1
+          },
+          "schoolAdminPassword": {
+            "type": "string",
+            "minLength": 1,
+            "pattern": "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[@$!%*?&])[A-Za-z\\d@$!%*?&]{8,}$"
+          },
+          "schoolPhone": {
+            "type": "string",
+            "minLength": 1
+          },
+          "schoolDayStartHour": {
+            "type": "string"
+          },
+          "schoolDayEndHour": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "schoolAddress",
+          "schoolAdminEmail",
+          "schoolAdminPassword",
+          "schoolDayEndHour",
+          "schoolDayStartHour",
+          "schoolName",
+          "schoolPhone"
+        ]
+      },
+      "CreateSchoolResponse": {
+        "type": "object",
+        "properties": {
+          "responseCode": {
+            "type": "string"
+          },
+          "error": {
+            "type": "boolean"
+          },
+          "timestamp": {
+            "type": "string"
+          },
+          "path": {
+            "type": "string"
+          },
+          "responseMessage": {
+            "type": "string"
+          },
+          "data": {
+            "$ref": "#/components/schemas/CreateSchoolResponseData"
+          }
+        }
+      },
+      "CreateSchoolResponseData": {
+        "type": "object",
+        "properties": {
+          "school": {
+            "$ref": "#/components/schemas/SchoolResponse"
+          }
+        }
+      },
+      "CreateRoomRequest": {
+        "type": "object",
+        "properties": {
+          "roomBuilding": {
+            "type": "string",
+            "minLength": 1
+          },
+          "roomNumber": {
+            "type": "string",
+            "minLength": 1
+          },
+          "roomCapacity": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 1
+          },
+          "roomType": {
+            "type": "string",
+            "enum": [
+              "LAB",
+              "CLASS",
+              "SEMINAR_ROOM",
+              "LECTURE_THEATRE"
+            ]
+          }
+        },
+        "required": [
+          "roomBuilding",
+          "roomCapacity",
+          "roomNumber",
+          "roomType"
+        ]
+      },
+      "CreateRoomResponse": {
+        "type": "object",
+        "properties": {
+          "responseCode": {
+            "type": "string"
+          },
+          "error": {
+            "type": "boolean"
+          },
+          "timestamp": {
+            "type": "string"
+          },
+          "path": {
+            "type": "string"
+          },
+          "responseMessage": {
+            "type": "string"
+          },
+          "data": {
+            "$ref": "#/components/schemas/CreateRoomResponseData"
+          }
+        }
+      },
+      "CreateRoomResponseData": {
+        "type": "object",
+        "properties": {
+          "room": {
+            "$ref": "#/components/schemas/RoomResponse"
+          }
+        }
+      },
+      "BulkUploadRoomResponse": {
+        "type": "object",
+        "properties": {
+          "responseCode": {
+            "type": "string"
+          },
+          "error": {
+            "type": "boolean"
+          },
+          "timestamp": {
+            "type": "string"
+          },
+          "path": {
+            "type": "string"
+          },
+          "responseMessage": {
+            "type": "string"
+          }
+        }
+      },
+      "BulkRoomRow": {
+        "type": "object",
+        "properties": {
+          "roomBuilding": {
+            "type": "string"
+          },
+          "roomNumber": {
+            "type": "string",
+            "minLength": 1
+          },
+          "roomCapacity": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 1
+          },
+          "roomType": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "roomNumber"
+        ]
+      },
+      "BulkUploadRoomArrayRequest": {
+        "type": "object",
+        "properties": {
+          "rooms": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BulkRoomRow"
+            },
+            "minItems": 1
+          }
+        },
+        "required": [
+          "rooms"
+        ]
+      },
+      "CreateLecturerRequest": {
+        "type": "object",
+        "properties": {
+          "lecturerStaffNumber": {
+            "type": "string",
+            "minLength": 1
+          },
+          "lecturerFirstName": {
+            "type": "string",
+            "minLength": 1
+          },
+          "lecturerLastName": {
+            "type": "string",
+            "minLength": 1
+          },
+          "lecturerEmail": {
+            "type": "string",
+            "format": "email",
+            "minLength": 1
+          },
+          "lecturerDepartmentId": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "required": [
+          "lecturerDepartmentId",
+          "lecturerEmail",
+          "lecturerFirstName",
+          "lecturerLastName",
+          "lecturerStaffNumber"
+        ]
+      },
+      "CreateLecturerResponse": {
+        "type": "object",
+        "properties": {
+          "responseCode": {
+            "type": "string"
+          },
+          "error": {
+            "type": "boolean"
+          },
+          "timestamp": {
+            "type": "string"
+          },
+          "path": {
+            "type": "string"
+          },
+          "responseMessage": {
+            "type": "string"
+          },
+          "data": {
+            "$ref": "#/components/schemas/CreateLecturerResponseData"
+          }
+        }
+      },
+      "CreateLecturerResponseData": {
+        "type": "object",
+        "properties": {
+          "lecturer": {
+            "$ref": "#/components/schemas/LecturerResponse"
+          }
+        }
+      },
+      "CreateEventRequest": {
+        "type": "object",
+        "properties": {
+          "eventSectionId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "eventDuration": {
+            "type": "string"
+          },
+          "eventType": {
+            "type": "string",
+            "enum": [
+              "CLASS",
+              "LAB"
+            ]
+          }
+        },
+        "required": [
+          "eventDuration",
+          "eventSectionId",
+          "eventType"
+        ]
+      },
+      "CreateEventResponse": {
+        "type": "object",
+        "properties": {
+          "responseCode": {
+            "type": "string"
+          },
+          "error": {
+            "type": "boolean"
+          },
+          "timestamp": {
+            "type": "string"
+          },
+          "path": {
+            "type": "string"
+          },
+          "responseMessage": {
+            "type": "string"
+          },
+          "data": {
+            "$ref": "#/components/schemas/CreateEventResponseData"
+          }
+        }
+      },
+      "CreateEventResponseData": {
+        "type": "object",
+        "properties": {
+          "event": {
+            "$ref": "#/components/schemas/EventResponse"
+          }
+        }
+      },
+      "CreateEnrollmentRequest": {
+        "type": "object",
+        "properties": {
+          "enrollmentStudentId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "enrollmentSectionId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "enrollmentAcademicPeriodId": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "required": [
+          "enrollmentSectionId",
+          "enrollmentStudentId"
+        ]
+      },
+      "CreateEnrollmentResponse": {
+        "type": "object",
+        "properties": {
+          "responseCode": {
+            "type": "string"
+          },
+          "error": {
+            "type": "boolean"
+          },
+          "timestamp": {
+            "type": "string"
+          },
+          "path": {
+            "type": "string"
+          },
+          "responseMessage": {
+            "type": "string"
+          },
+          "data": {
+            "$ref": "#/components/schemas/CreateEnrollmentResponseData"
+          }
+        }
+      },
+      "CreateEnrollmentResponseData": {
+        "type": "object",
+        "properties": {
+          "enrollment": {
+            "$ref": "#/components/schemas/EnrollmentResponse"
+          }
+        }
+      },
+      "BulkEnrollmentRequest": {
+        "type": "object",
+        "properties": {
+          "academicPeriodId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "rows": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BulkEnrollmentRow"
+            },
+            "minItems": 1
+          }
+        },
+        "required": [
+          "academicPeriodId",
+          "rows"
+        ]
+      },
+      "BulkEnrollmentRow": {
+        "type": "object",
+        "properties": {
+          "studentMatriculationNumber": {
+            "type": "string",
+            "minLength": 1
+          },
+          "studentFirstName": {
+            "type": "string",
+            "minLength": 1
+          },
+          "studentLastName": {
+            "type": "string",
+            "minLength": 1
+          },
+          "studentEmail": {
+            "type": "string",
+            "format": "email",
+            "minLength": 1
+          },
+          "studentLevel": {
+            "type": "string",
+            "enum": [
+              "LEVEL_100",
+              "LEVEL_200",
+              "LEVEL_300",
+              "LEVEL_400",
+              "LEVEL_500"
+            ]
+          },
+          "studentDepartment": {
+            "type": "string",
+            "minLength": 1
+          },
+          "courseSection": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "courseSection",
+          "studentDepartment",
+          "studentEmail",
+          "studentFirstName",
+          "studentLastName",
+          "studentLevel",
+          "studentMatriculationNumber"
+        ]
+      },
+      "BulkEnrollmentResponse": {
+        "type": "object",
+        "properties": {
+          "responseCode": {
+            "type": "string"
+          },
+          "error": {
+            "type": "boolean"
+          },
+          "timestamp": {
+            "type": "string"
+          },
+          "path": {
+            "type": "string"
+          },
+          "responseMessage": {
+            "type": "string"
+          },
+          "data": {
+            "$ref": "#/components/schemas/BulkEnrollmentResponseData"
+          }
+        }
+      },
+      "BulkEnrollmentResponseData": {
+        "type": "object",
+        "properties": {
+          "totalProcessed": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "totalCreated": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "totalSkipped": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "enrollments": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/EnrollmentResponse"
+            }
+          },
+          "skippedReasons": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "CreateDepartmentRequest": {
+        "type": "object",
+        "properties": {
+          "departmentName": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "departmentName"
+        ]
+      },
+      "CreateDepartmentResponse": {
+        "type": "object",
+        "properties": {
+          "responseCode": {
+            "type": "string"
+          },
+          "error": {
+            "type": "boolean"
+          },
+          "timestamp": {
+            "type": "string"
+          },
+          "path": {
+            "type": "string"
+          },
+          "responseMessage": {
+            "type": "string"
+          },
+          "data": {
+            "$ref": "#/components/schemas/CreateDepartmentResponseData"
+          }
+        }
+      },
+      "CreateDepartmentResponseData": {
+        "type": "object",
+        "properties": {
+          "department": {
+            "$ref": "#/components/schemas/DepartmentResponse"
+          }
+        }
+      },
+      "CreateCourseRequest": {
+        "type": "object",
+        "properties": {
+          "courseName": {
+            "type": "string",
+            "minLength": 1
+          },
+          "courseCode": {
+            "type": "string",
+            "maxLength": 20,
+            "minLength": 0
+          },
+          "courseUnit": {
+            "type": "integer",
+            "format": "int32",
+            "maximum": 10,
+            "minimum": 1
+          },
+          "courseDescription": {
+            "type": "string"
+          },
+          "courseLevel": {
+            "type": "string",
+            "enum": [
+              "LEVEL_100",
+              "LEVEL_200",
+              "LEVEL_300",
+              "LEVEL_400",
+              "LEVEL_500"
+            ]
+          }
+        },
+        "required": [
+          "courseCode",
+          "courseLevel",
+          "courseName",
+          "courseUnit"
+        ]
+      },
+      "CreateCourseResponse": {
+        "type": "object",
+        "properties": {
+          "responseCode": {
+            "type": "string"
+          },
+          "error": {
+            "type": "boolean"
+          },
+          "timestamp": {
+            "type": "string"
+          },
+          "path": {
+            "type": "string"
+          },
+          "responseMessage": {
+            "type": "string"
+          },
+          "data": {
+            "$ref": "#/components/schemas/CreateCourseResponseData"
+          }
+        }
+      },
+      "CreateCourseResponseData": {
+        "type": "object",
+        "properties": {
+          "course": {
+            "$ref": "#/components/schemas/CourseResponse"
+          }
+        }
+      },
+      "LoginRequest": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "format": "email",
+            "minLength": 1
+          },
+          "password": {
+            "type": "string",
+            "minLength": 1
+          },
+          "loginType": {
+            "type": "string",
+            "enum": [
+              "SCHOOL",
+              "ADMIN"
+            ]
+          }
+        },
+        "required": [
+          "email",
+          "loginType",
+          "password"
+        ]
+      },
+      "LoginResponse": {
+        "type": "object",
+        "properties": {
+          "school": {
+            "$ref": "#/components/schemas/SchoolResponse"
+          },
+          "authToken": {
+            "type": "string"
+          }
+        }
+      },
+      "CreateAcademicPeriodRequest": {
+        "type": "object",
+        "properties": {
+          "academicPeriodName": {
+            "type": "string",
+            "minLength": 1
+          },
+          "academicPeriodSession": {
+            "type": "string",
+            "minLength": 1
+          },
+          "academicPeriodSemester": {
+            "type": "string",
+            "minLength": 1
+          },
+          "academicPeriodStartDate": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "academicPeriodEndDate": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "academicPeriodEndDate",
+          "academicPeriodName",
+          "academicPeriodSemester",
+          "academicPeriodSession",
+          "academicPeriodStartDate"
+        ]
+      },
+      "CreateAcademicPeriodResponse": {
+        "type": "object",
+        "properties": {
+          "responseCode": {
+            "type": "string"
+          },
+          "error": {
+            "type": "boolean"
+          },
+          "timestamp": {
+            "type": "string"
+          },
+          "path": {
+            "type": "string"
+          },
+          "responseMessage": {
+            "type": "string"
+          },
+          "data": {
+            "$ref": "#/components/schemas/CreateAcademicPeriodResponseData"
+          }
+        }
+      },
+      "CreateAcademicPeriodResponseData": {
+        "type": "object",
+        "properties": {
+          "academicPeriod": {
+            "$ref": "#/components/schemas/AcademicPeriodResponse"
+          }
+        }
+      },
+      "ReadTimeslotRequest": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "timeslotDay": {
+            "type": "string",
+            "enum": [
+              "SUNDAY",
+              "MONDAY",
+              "TUESDAY",
+              "WEDNESDAY",
+              "THURSDAY",
+              "FRIDAY",
+              "SATURDAY"
+            ]
+          },
+          "timeslotStatus": {
+            "type": "string",
+            "enum": [
+              "ACTIVE",
+              "INACTIVE"
+            ]
+          }
+        }
+      },
+      "ReadTimeslotResponse": {
+        "type": "object",
+        "properties": {
+          "responseCode": {
+            "type": "string"
+          },
+          "error": {
+            "type": "boolean"
+          },
+          "timestamp": {
+            "type": "string"
+          },
+          "path": {
+            "type": "string"
+          },
+          "responseMessage": {
+            "type": "string"
+          },
+          "data": {
+            "$ref": "#/components/schemas/ReadTimeslotResponseData"
+          }
+        }
+      },
+      "ReadTimeslotResponseData": {
+        "type": "object",
+        "properties": {
+          "timeslots": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TimeslotResponse"
+            }
+          }
+        }
+      },
+      "DownloadTimetableRequest": {
+        "type": "object",
+        "properties": {
+          "academicPeriodId": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "academicPeriodId"
+        ]
+      },
+      "DownloadConflictGraphRequest": {
+        "type": "object",
+        "properties": {
+          "academicPeriodId": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "academicPeriodId"
+        ]
+      },
+      "ReadStudentRequest": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "studentFirstName": {
+            "type": "string"
+          },
+          "studentLastName": {
+            "type": "string"
+          },
+          "studentMatriculationNumber": {
+            "type": "string"
+          },
+          "studentEmail": {
+            "type": "string"
+          },
+          "studentLevel": {
+            "type": "string",
+            "enum": [
+              "LEVEL_100",
+              "LEVEL_200",
+              "LEVEL_300",
+              "LEVEL_400",
+              "LEVEL_500"
+            ]
+          },
+          "studentDepartmentId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "studentStatus": {
+            "type": "string",
+            "enum": [
+              "ACTIVE",
+              "INACTIVE"
+            ]
+          }
+        }
+      },
+      "ReadStudentResponse": {
+        "type": "object",
+        "properties": {
+          "responseCode": {
+            "type": "string"
+          },
+          "error": {
+            "type": "boolean"
+          },
+          "timestamp": {
+            "type": "string"
+          },
+          "path": {
+            "type": "string"
+          },
+          "responseMessage": {
+            "type": "string"
+          },
+          "data": {
+            "$ref": "#/components/schemas/ReadStudentResponseData"
+          }
+        }
+      },
+      "ReadStudentResponseData": {
+        "type": "object",
+        "properties": {
+          "students": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StudentResponse"
+            }
+          }
+        }
+      },
+      "ReadSectionRequest": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "sectionCourseId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "sectionName": {
+            "type": "string"
+          },
+          "sectionAcademicPeriodId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "sectionStatus": {
+            "type": "string",
+            "enum": [
+              "ACTIVE",
+              "INACTIVE"
+            ]
+          }
+        }
+      },
+      "ReadSectionResponse": {
+        "type": "object",
+        "properties": {
+          "responseCode": {
+            "type": "string"
+          },
+          "error": {
+            "type": "boolean"
+          },
+          "timestamp": {
+            "type": "string"
+          },
+          "path": {
+            "type": "string"
+          },
+          "responseMessage": {
+            "type": "string"
+          },
+          "data": {
+            "$ref": "#/components/schemas/ReadSectionResponseData"
+          }
+        }
+      },
+      "ReadSectionResponseData": {
+        "type": "object",
+        "properties": {
+          "sections": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SectionResponse"
+            }
+          }
+        }
+      },
+      "ReadSectionTimeslotRequest": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "sectionTimeslotSectionId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "sectionTimeslotTimeslotId": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      },
+      "ReadSectionTimeslotResponse": {
+        "type": "object",
+        "properties": {
+          "responseCode": {
+            "type": "string"
+          },
+          "error": {
+            "type": "boolean"
+          },
+          "timestamp": {
+            "type": "string"
+          },
+          "path": {
+            "type": "string"
+          },
+          "responseMessage": {
+            "type": "string"
+          },
+          "data": {
+            "$ref": "#/components/schemas/ReadSectionTimeslotResponseData"
+          }
+        }
+      },
+      "ReadSectionTimeslotResponseData": {
+        "type": "object",
+        "properties": {
+          "sectionTimeslots": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SectionTimeslotResponse"
+            }
+          }
+        }
+      },
+      "ReadSectionLecturerRequest": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "sectionLecturerSectionId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "sectionLecturerLecturerId": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      },
+      "ReadSectionLecturerResponse": {
+        "type": "object",
+        "properties": {
+          "responseCode": {
+            "type": "string"
+          },
+          "error": {
+            "type": "boolean"
+          },
+          "timestamp": {
+            "type": "string"
+          },
+          "path": {
+            "type": "string"
+          },
+          "responseMessage": {
+            "type": "string"
+          },
+          "data": {
+            "$ref": "#/components/schemas/ReadSectionLecturerResponseData"
+          }
+        }
+      },
+      "ReadSectionLecturerResponseData": {
+        "type": "object",
+        "properties": {
+          "sectionLecturers": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SectionLecturerResponse"
+            }
+          }
+        }
+      },
+      "ReadSchoolRequest": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "schoolName": {
+            "type": "string"
+          },
+          "schoolStatus": {
+            "type": "string",
+            "enum": [
+              "ACTIVE",
+              "INACTIVE",
+              "SUSPENDED"
+            ]
+          }
+        }
+      },
+      "ReadSchoolResponse": {
+        "type": "object",
+        "properties": {
+          "responseCode": {
+            "type": "string"
+          },
+          "error": {
+            "type": "boolean"
+          },
+          "timestamp": {
+            "type": "string"
+          },
+          "path": {
+            "type": "string"
+          },
+          "responseMessage": {
+            "type": "string"
+          },
+          "data": {
+            "$ref": "#/components/schemas/ReadSchoolResponseData"
+          }
+        }
+      },
+      "ReadSchoolResponseData": {
+        "type": "object",
+        "properties": {
+          "schools": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SchoolResponse"
+            }
+          }
+        }
+      },
+      "ReadRoomRequest": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "roomBuilding": {
+            "type": "string"
+          },
+          "roomNumber": {
+            "type": "string"
+          },
+          "roomCapacity": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "roomType": {
+            "type": "string",
+            "enum": [
+              "LAB",
+              "CLASS",
+              "SEMINAR_ROOM",
+              "LECTURE_THEATRE"
+            ]
+          },
+          "roomStatus": {
+            "type": "string",
+            "enum": [
+              "ACTIVE",
+              "INACTIVE"
+            ]
+          }
+        }
+      },
+      "ReadRoomResponse": {
+        "type": "object",
+        "properties": {
+          "responseCode": {
+            "type": "string"
+          },
+          "error": {
+            "type": "boolean"
+          },
+          "timestamp": {
+            "type": "string"
+          },
+          "path": {
+            "type": "string"
+          },
+          "responseMessage": {
+            "type": "string"
+          },
+          "data": {
+            "$ref": "#/components/schemas/ReadRoomResponseData"
+          }
+        }
+      },
+      "ReadRoomResponseData": {
+        "type": "object",
+        "properties": {
+          "rooms": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RoomResponse"
+            }
+          }
+        }
+      },
+      "ReadLecturerRequest": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "lecturerStaffNumber": {
+            "type": "string"
+          },
+          "lecturerFirstName": {
+            "type": "string"
+          },
+          "lecturerLastName": {
+            "type": "string"
+          },
+          "lecturerEmail": {
+            "type": "string"
+          },
+          "lecturerDepartmentId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "lecturerStatus": {
+            "type": "string",
+            "enum": [
+              "ACTIVE",
+              "INACTIVE"
+            ]
+          }
+        }
+      },
+      "ReadLecturerResponse": {
+        "type": "object",
+        "properties": {
+          "responseCode": {
+            "type": "string"
+          },
+          "error": {
+            "type": "boolean"
+          },
+          "timestamp": {
+            "type": "string"
+          },
+          "path": {
+            "type": "string"
+          },
+          "responseMessage": {
+            "type": "string"
+          },
+          "data": {
+            "$ref": "#/components/schemas/ReadLecturerResponseData"
+          }
+        }
+      },
+      "ReadLecturerResponseData": {
+        "type": "object",
+        "properties": {
+          "lecturers": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LecturerResponse"
+            }
+          }
+        }
+      },
+      "ReadEventRequest": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "eventSectionId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "eventType": {
+            "type": "string",
+            "enum": [
+              "CLASS",
+              "LAB"
+            ]
+          },
+          "eventStatus": {
+            "type": "string",
+            "enum": [
+              "ACTIVE",
+              "INACTIVE"
+            ]
+          }
+        }
+      },
+      "ReadEventResponse": {
+        "type": "object",
+        "properties": {
+          "responseCode": {
+            "type": "string"
+          },
+          "error": {
+            "type": "boolean"
+          },
+          "timestamp": {
+            "type": "string"
+          },
+          "path": {
+            "type": "string"
+          },
+          "responseMessage": {
+            "type": "string"
+          },
+          "data": {
+            "$ref": "#/components/schemas/ReadEventResponseData"
+          }
+        }
+      },
+      "ReadEventResponseData": {
+        "type": "object",
+        "properties": {
+          "events": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/EventResponse"
+            }
+          }
+        }
+      },
+      "ReadEnrollmentRequest": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "enrollmentStudentId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "enrollmentSectionId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "enrollmentAcademicPeriodId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "enrollmentStatus": {
+            "type": "string",
+            "enum": [
+              "ACTIVE",
+              "INACTIVE"
+            ]
+          }
+        }
+      },
+      "ReadEnrollmentResponse": {
+        "type": "object",
+        "properties": {
+          "responseCode": {
+            "type": "string"
+          },
+          "error": {
+            "type": "boolean"
+          },
+          "timestamp": {
+            "type": "string"
+          },
+          "path": {
+            "type": "string"
+          },
+          "responseMessage": {
+            "type": "string"
+          },
+          "data": {
+            "$ref": "#/components/schemas/ReadEnrollmentResponseData"
+          }
+        }
+      },
+      "ReadEnrollmentResponseData": {
+        "type": "object",
+        "properties": {
+          "enrollments": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/EnrollmentResponse"
+            }
+          }
+        }
+      },
+      "ReadDepartmentRequest": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "departmentName": {
+            "type": "string"
+          },
+          "departmentStatus": {
+            "type": "string",
+            "enum": [
+              "ACTIVE",
+              "INACTIVE"
+            ]
+          }
+        }
+      },
+      "ReadDepartmentResponse": {
+        "type": "object",
+        "properties": {
+          "responseCode": {
+            "type": "string"
+          },
+          "error": {
+            "type": "boolean"
+          },
+          "timestamp": {
+            "type": "string"
+          },
+          "path": {
+            "type": "string"
+          },
+          "responseMessage": {
+            "type": "string"
+          },
+          "data": {
+            "$ref": "#/components/schemas/ReadDepartmentResponseData"
+          }
+        }
+      },
+      "ReadDepartmentResponseData": {
+        "type": "object",
+        "properties": {
+          "departments": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DepartmentResponse"
+            }
+          }
+        }
+      },
+      "ReadCourseRequest": {
+        "type": "object",
+        "properties": {
+          "courseId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "courseCode": {
+            "type": "string"
+          },
+          "courseName": {
+            "type": "string"
+          },
+          "courseUnit": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "courseLevel": {
+            "type": "string",
+            "enum": [
+              "LEVEL_100",
+              "LEVEL_200",
+              "LEVEL_300",
+              "LEVEL_400",
+              "LEVEL_500"
+            ]
+          },
+          "courseStatus": {
+            "type": "string",
+            "enum": [
+              "ACTIVE",
+              "INACTIVE"
+            ]
+          }
+        }
+      },
+      "ReadCourseResponse": {
+        "type": "object",
+        "properties": {
+          "responseCode": {
+            "type": "string"
+          },
+          "error": {
+            "type": "boolean"
+          },
+          "timestamp": {
+            "type": "string"
+          },
+          "path": {
+            "type": "string"
+          },
+          "responseMessage": {
+            "type": "string"
+          },
+          "data": {
+            "$ref": "#/components/schemas/ReadCourseResponseData"
+          }
+        }
+      },
+      "ReadCourseResponseData": {
+        "type": "object",
+        "properties": {
+          "courses": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CourseResponse"
+            }
+          }
+        }
+      },
+      "ReadAcademicPeriodRequest": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "academicPeriodName": {
+            "type": "string"
+          },
+          "academicPeriodSession": {
+            "type": "string"
+          },
+          "academicPeriodSemester": {
+            "type": "string"
+          },
+          "academicPeriodStatus": {
+            "type": "string",
+            "enum": [
+              "ACTIVE",
+              "INACTIVE"
+            ]
+          }
+        }
+      },
+      "ReadAcademicPeriodResponse": {
+        "type": "object",
+        "properties": {
+          "responseCode": {
+            "type": "string"
+          },
+          "error": {
+            "type": "boolean"
+          },
+          "timestamp": {
+            "type": "string"
+          },
+          "path": {
+            "type": "string"
+          },
+          "responseMessage": {
+            "type": "string"
+          },
+          "data": {
+            "$ref": "#/components/schemas/ReadAcademicPeriodResponseData"
+          }
+        }
+      },
+      "ReadAcademicPeriodResponseData": {
+        "type": "object",
+        "properties": {
+          "academicPeriods": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AcademicPeriodResponse"
+            }
+          }
+        }
+      },
+      "DeleteTimeslotRequest": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "required": [
+          "id"
+        ]
+      },
+      "DeleteTimeslotResponse": {
+        "type": "object",
+        "properties": {
+          "responseCode": {
+            "type": "string"
+          },
+          "error": {
+            "type": "boolean"
+          },
+          "timestamp": {
+            "type": "string"
+          },
+          "path": {
+            "type": "string"
+          },
+          "responseMessage": {
+            "type": "string"
+          }
+        }
+      },
+      "DeleteStudentRequest": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "required": [
+          "id"
+        ]
+      },
+      "DeleteStudentResponse": {
+        "type": "object",
+        "properties": {
+          "responseCode": {
+            "type": "string"
+          },
+          "error": {
+            "type": "boolean"
+          },
+          "timestamp": {
+            "type": "string"
+          },
+          "path": {
+            "type": "string"
+          },
+          "responseMessage": {
+            "type": "string"
+          }
+        }
+      },
+      "DeleteSectionRequest": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "required": [
+          "id"
+        ]
+      },
+      "DeleteSectionResponse": {
+        "type": "object",
+        "properties": {
+          "responseCode": {
+            "type": "string"
+          },
+          "error": {
+            "type": "boolean"
+          },
+          "timestamp": {
+            "type": "string"
+          },
+          "path": {
+            "type": "string"
+          },
+          "responseMessage": {
+            "type": "string"
+          }
+        }
+      },
+      "DeleteSectionTimeslotRequest": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "required": [
+          "id"
+        ]
+      },
+      "DeleteSectionTimeslotResponse": {
+        "type": "object",
+        "properties": {
+          "responseCode": {
+            "type": "string"
+          },
+          "error": {
+            "type": "boolean"
+          },
+          "timestamp": {
+            "type": "string"
+          },
+          "path": {
+            "type": "string"
+          },
+          "responseMessage": {
+            "type": "string"
+          }
+        }
+      },
+      "DeleteSectionLecturerRequest": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "required": [
+          "id"
+        ]
+      },
+      "DeleteSectionLecturerResponse": {
+        "type": "object",
+        "properties": {
+          "responseCode": {
+            "type": "string"
+          },
+          "error": {
+            "type": "boolean"
+          },
+          "timestamp": {
+            "type": "string"
+          },
+          "path": {
+            "type": "string"
+          },
+          "responseMessage": {
+            "type": "string"
+          }
+        }
+      },
+      "DeleteSchoolRequest": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "required": [
+          "id"
+        ]
+      },
+      "DeleteSchoolResponse": {
+        "type": "object",
+        "properties": {
+          "responseCode": {
+            "type": "string"
+          },
+          "error": {
+            "type": "boolean"
+          },
+          "timestamp": {
+            "type": "string"
+          },
+          "path": {
+            "type": "string"
+          },
+          "responseMessage": {
+            "type": "string"
+          }
+        }
+      },
+      "DeleteRoomRequest": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "required": [
+          "id"
+        ]
+      },
+      "DeleteRoomResponse": {
+        "type": "object",
+        "properties": {
+          "responseCode": {
+            "type": "string"
+          },
+          "error": {
+            "type": "boolean"
+          },
+          "timestamp": {
+            "type": "string"
+          },
+          "path": {
+            "type": "string"
+          },
+          "responseMessage": {
+            "type": "string"
+          }
+        }
+      },
+      "DeleteLecturerRequest": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "required": [
+          "id"
+        ]
+      },
+      "DeleteLecturerResponse": {
+        "type": "object",
+        "properties": {
+          "responseCode": {
+            "type": "string"
+          },
+          "error": {
+            "type": "boolean"
+          },
+          "timestamp": {
+            "type": "string"
+          },
+          "path": {
+            "type": "string"
+          },
+          "responseMessage": {
+            "type": "string"
+          }
+        }
+      },
+      "DeleteEventRequest": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "required": [
+          "id"
+        ]
+      },
+      "DeleteEventResponse": {
+        "type": "object",
+        "properties": {
+          "responseCode": {
+            "type": "string"
+          },
+          "error": {
+            "type": "boolean"
+          },
+          "timestamp": {
+            "type": "string"
+          },
+          "path": {
+            "type": "string"
+          },
+          "responseMessage": {
+            "type": "string"
+          }
+        }
+      },
+      "DeleteEnrollmentRequest": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "required": [
+          "id"
+        ]
+      },
+      "DeleteEnrollmentResponse": {
+        "type": "object",
+        "properties": {
+          "responseCode": {
+            "type": "string"
+          },
+          "error": {
+            "type": "boolean"
+          },
+          "timestamp": {
+            "type": "string"
+          },
+          "path": {
+            "type": "string"
+          },
+          "responseMessage": {
+            "type": "string"
+          }
+        }
+      },
+      "DeleteDepartmentRequest": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "required": [
+          "id"
+        ]
+      },
+      "DeleteDepartmentResponse": {
+        "type": "object",
+        "properties": {
+          "responseCode": {
+            "type": "string"
+          },
+          "error": {
+            "type": "boolean"
+          },
+          "timestamp": {
+            "type": "string"
+          },
+          "path": {
+            "type": "string"
+          },
+          "responseMessage": {
+            "type": "string"
+          }
+        }
+      },
+      "DeleteCourseRequest": {
+        "type": "object",
+        "properties": {
+          "courseId": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "required": [
+          "courseId"
+        ]
+      },
+      "DeleteCourseResponse": {
+        "type": "object",
+        "properties": {
+          "responseCode": {
+            "type": "string"
+          },
+          "error": {
+            "type": "boolean"
+          },
+          "timestamp": {
+            "type": "string"
+          },
+          "path": {
+            "type": "string"
+          },
+          "responseMessage": {
+            "type": "string"
+          }
+        }
+      },
+      "DeleteAcademicPeriodRequest": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "required": [
+          "id"
+        ]
+      },
+      "DeleteAcademicPeriodResponse": {
+        "type": "object",
+        "properties": {
+          "responseCode": {
+            "type": "string"
+          },
+          "error": {
+            "type": "boolean"
+          },
+          "timestamp": {
+            "type": "string"
+          },
+          "path": {
+            "type": "string"
+          },
+          "responseMessage": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "description": "Paste your JWT token here. It is obtained from POST /api/auth/login.",
+        "name": "bearerAuth",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    }
+  }
+}
