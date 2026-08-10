@@ -1,0 +1,71 @@
+# Render Blueprint — https://render.com/docs/blueprint-spec
+#
+# Deploy:  Render dashboard → New → Blueprint → pick this repo.
+# Render reads this file, creates both resources, and wires the database
+# credentials into the web service automatically.
+#
+# You must set ONE value by hand after the first deploy: JWT_SECRET (see below).
+
+databases:
+  - name: timetable-db
+    databaseName: timetable_scheduler
+    user: timetable
+    plan: free
+    # Free Postgres on Render expires 30 days after creation and is then deleted.
+    # Fine for a demo or a viva; note the date and recreate if the project outlives it.
+
+services:
+  - type: web
+    name: timetable-scheduler
+    runtime: docker
+    plan: free
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /swagger-ui/index.html
+
+    envVars:
+      # ── Database — injected from the managed Postgres above ───────────────
+      # Render exposes the connection only as separate parts, never as a JDBC
+      # URL, which is why application.properties assembles it from DB_HOST /
+      # DB_PORT / DB_NAME rather than requiring DB_URL.
+      - key: DB_HOST
+        fromDatabase: { name: timetable-db, property: host }
+      - key: DB_PORT
+        fromDatabase: { name: timetable-db, property: port }
+      - key: DB_NAME
+        fromDatabase: { name: timetable-db, property: database }
+      - key: DB_USERNAME
+        fromDatabase: { name: timetable-db, property: user }
+      - key: DB_PASSWORD
+        fromDatabase: { name: timetable-db, property: password }
+
+      # ── Secrets — set this in the dashboard, it is not in the repo ────────
+      # Generate with:  openssl rand -base64 48
+      - key: JWT_SECRET
+        sync: false
+      - key: JWT_EXPIRATION
+        value: 3600s
+
+      # ── Solver budget — the important one ─────────────────────────────────
+      # Locally this is 600 seconds. That cannot work behind a load balancer:
+      # POST /timetable/generate would block for ten minutes and Render's router
+      # would terminate the request long before the solver returned, leaving it
+      # burning CPU on a connection nobody is listening to.
+      #
+      # 45s keeps the request inside every proxy timeout. The trade-off is real
+      # and worth stating out loud: the budget is WALL-CLOCK, so fewer seconds
+      # means fewer ant iterations and measurably worse timetables. Benchmark
+      # locally at 600s; treat this instance as a functional demo, not evidence.
+      - key: TIMETABLE_SOLVER_TIME_LIMIT_SECONDS
+        value: "45"
+
+      # Verbose per-iteration logging is noise in a hosted log stream.
+      - key: TIMETABLE_SOLVER_VERBOSE
+        value: "false"
+
+      # ── JVM sizing for a 512 MB free instance ─────────────────────────────
+      # The Dockerfile sets MaxRAMPercentage=75, which suits the 2 GB Compose
+      # container but leaves too little for metaspace and thread stacks at
+      # 512 MB — Spring Boot alone wants ~100 MB of metaspace. 60% gives the
+      # heap ~307 MB and keeps the rest for native memory.
+      - key: JAVA_TOOL_OPTIONS
+        value: "-XX:MaxRAMPercentage=60 -XX:+UseSerialGC"

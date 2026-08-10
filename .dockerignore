@@ -1,0 +1,15 @@
+# Keep the build context small and keep secrets out of it entirely.
+
+.env
+.git/
+.github/
+.idea/
+target/
+docs/
+*.md
+.DS_Store
+local.properties
+api.json
+architecture.drawio
+Dockerfile
+docker-compose.yml

@@ -67,6 +67,15 @@
             <groupId>com.mysql</groupId>
             <artifactId>mysql-connector-j</artifactId>
             <version>9.6.0</version>
+            <scope>runtime</scope>
+        </dependency>
+
+        <!-- Both drivers ship; Spring Boot picks one from the JDBC URL. Postgres is what
+             Render offers as a managed database, MySQL is kept for existing local setups. -->
+        <dependency>
+            <groupId>org.postgresql</groupId>
+            <artifactId>postgresql</artifactId>
+            <scope>runtime</scope>
         </dependency>
 
         <!-- Version inherited from spring-boot-starter-parent; do not pin. -->
