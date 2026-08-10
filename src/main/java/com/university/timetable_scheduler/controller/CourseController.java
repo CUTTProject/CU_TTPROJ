@@ -18,6 +18,7 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/api/courses")
 @AllArgsConstructor
 public class CourseController {
+
     private final CourseServiceImpl courseService;
 
     @PostMapping("/create")
