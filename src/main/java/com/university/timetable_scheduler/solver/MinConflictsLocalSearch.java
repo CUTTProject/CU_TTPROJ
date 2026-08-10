@@ -7,9 +7,9 @@ import java.util.Random;
  *
  * <p>Flowchart → code:
  * <pre>
- *   Input: CSP, Time_Limit          → the model, plus {@link Deadline}
+ *   Input: CSP, Time_Limit          → the model, plus a nanoTime deadline
  *   Current :- complete assignment  → the ant's constructed solution (already complete)
- *   Time_Limit reached?             → deadline.isExpired()
+ *   Time_Limit reached?             → System.nanoTime() >= deadlineNanos
  *   Is Current the CSP solution?    → !counter.hasConflicts()   → return current
  *   Var :- a randomly chosen var    → counter.randomConflictedEvent(random)
  *   Value :- a value v (Note 1)     → argMinConflicts(...)      ← the piece that was missing
@@ -18,10 +18,9 @@ import java.util.Random;
  * </pre>
  *
  * <p>Note 1 is the important line: <i>"the value v for var that <b>minimises</b>
- * CONFLICTS(csp, var, v, current)"</i>. The old code partitioned candidates into clean/not-clean
- * and picked a random one — a boolean where the spec asks for an argmin. When nothing clean
- * existed it therefore chose a random <em>violating</em> slot rather than the least-bad one, which
- * is exactly the situation min-conflicts is for.
+ * CONFLICTS(csp, var, v, current)"</i> — an argmin over the domain, not a clean/not-clean split.
+ * Picking randomly among violating candidates when nothing clean exists is exactly the situation
+ * min-conflicts is meant to handle.
  *
  * <p>In the hybrid this runs as ACO's <b>daemon step</b>: each ant constructs a solution, then this
  * polishes it before it is scored and allowed to deposit pheromone. Construction explores; this
@@ -52,9 +51,10 @@ public final class MinConflictsLocalSearch {
     /**
      * Improves the counter's solution in place, leaving it at the best state found.
      *
+     * @param deadlineNanos a {@link System#nanoTime()} reading past which the search must stop
      * @return the cost of that best state
      */
-    public SolutionCost improve(ConflictCounter counter, Deadline deadline) {
+    public SolutionCost improve(ConflictCounter counter, long deadlineNanos) {
         Solution current = counter.solution();
 
         SolutionCost bestCost = counter.cost();
@@ -67,7 +67,7 @@ public final class MinConflictsLocalSearch {
 
             // "Time_Limit reached?" — checked every 64 steps; nanoTime is cheap but not free,
             // and 64 steps of min-conflicts take microseconds.
-            if ((step & 0x3F) == 0 && deadline.isExpired()) break;
+            if ((step & 0x3F) == 0 && System.nanoTime() >= deadlineNanos) break;
 
             // "Var :- A randomly chosen variable" (restricted to conflicted ones — repairing a
             // satisfied variable cannot reduce the cost).

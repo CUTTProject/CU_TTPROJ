@@ -1,22 +1,19 @@
 package com.university.timetable_scheduler.solver;
 
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
 /**
  * Counts hard-constraint violations, and maintains that count incrementally as events move.
  *
- * <p><b>This class is the spec's {@code CONFLICTS(csp, var, v, current)} (page 4, Note 1)</b> — the
- * function the previous implementation never had. The old code asked only "is this candidate
- * <em>completely</em> clean, yes or no?" ({@code isConstraintFree}), which is a boolean, so when no
- * clean slot existed it fell back to a <em>random</em> violating one. A search cannot descend a
- * gradient it never computes. {@link #conflictsIfAssigned} returns the actual count, so
- * min-conflicts can pick the least-bad move, and the ants get a meaningful heuristic.
+ * <p><b>This class is the spec's {@code CONFLICTS(csp, var, v, current)} (page 4, Note 1).</b>
+ * {@link #conflictsIfAssigned} returns a count rather than a clean/not-clean verdict, which is what
+ * lets min-conflicts pick the least-bad move and gives the ants a meaningful heuristic — a search
+ * cannot descend a gradient it never computes.
  *
- * <p><b>Why it is fast.</b> The old check scanned every event in the school for every candidate.
- * Here, two indices make it proportional to a candidate's own footprint instead:
+ * <p><b>Why it is fast.</b> Two indices keep every query proportional to a candidate's own
+ * footprint rather than to the size of the school:
  * <ul>
  *   <li><i>Room exclusivity</i> — a {@code (room, slot) -> events} occupancy table, so finding who
  *       else is in this room at this time is a lookup, not a scan.</li>
@@ -41,8 +38,27 @@ public final class ConflictCounter {
     /** conflictCount[e] = how many distinct other events e currently violates a constraint with. */
     private final int[] conflictCount;
 
-    /** The events with conflictCount > 0 — min-conflicts picks its next variable from here. */
-    private final IndexedEventSet conflicted;
+    /**
+     * Running totals behind {@link #cost()}, maintained by the mutators below.
+     *
+     * <p>They exist so scoring is O(1). Re-deriving them costs two passes over every event, and
+     * {@link MinConflictsLocalSearch} scores after every single repair step — tens of thousands of
+     * times per ant — so a linear {@code cost()} dominates the whole solver's runtime.
+     */
+    private int degreeSum;
+    private int unassignedCount;
+
+    // ── Conflicted-event set: dense/sparse pair giving O(1) add, remove and uniform random pick ──
+    // The random pick is the flowchart's "Var :- A randomly chosen variable", done every
+    // min-conflicts step. A HashSet would force an O(n) walk or a fresh list allocation each time.
+    // dense holds the members packed into a prefix; conflictedAt maps an event back to its slot so
+    // removal can swap-with-last instead of shifting.
+
+    private static final int NOT_CONFLICTED = -1;
+
+    private final int[] conflictedDense;
+    private final int[] conflictedAt;
+    private int conflictedCount;
 
     /** Reused by {@link #conflictsIfAssigned} to keep the hot path allocation-free. */
     private final Set<Integer> scratch = new HashSet<>();
@@ -53,7 +69,9 @@ public final class ConflictCounter {
         this.solution = solution;
         this.roomSlotOccupants = new Set[model.roomCount() * model.slotCount()];
         this.conflictCount = new int[model.eventCount()];
-        this.conflicted = new IndexedEventSet(model.eventCount());
+        this.conflictedDense = new int[model.eventCount()];
+        this.conflictedAt = new int[model.eventCount()];
+        java.util.Arrays.fill(conflictedAt, NOT_CONFLICTED);
         rebuildFrom(solution);
     }
 
@@ -118,9 +136,10 @@ public final class ConflictCounter {
 
     /** Places {@code e} at candidate {@code k}, moving it if it was already placed. */
     public void assign(int e, int k) {
-        if (solution.isAssigned(e)) unassign(e);
+        if (solution.isAssigned(e)) unassign(e);   // puts e back into unassignedCount
 
         solution.setChoice(e, k);
+        if (!model.domainOf(e).isEmpty()) unassignedCount--;
         addToOccupancy(e, k);
 
         // Only e and its new partners can have changed; recompute exactly those.
@@ -142,6 +161,7 @@ public final class ConflictCounter {
 
         removeFromOccupancy(e, k);
         solution.setChoice(e, Solution.UNASSIGNED);
+        if (!model.domainOf(e).isEmpty()) unassignedCount++;
 
         setConflictCount(e, 0);
         affected.forEach(this::recomputeConflictCount);
@@ -178,12 +198,34 @@ public final class ConflictCounter {
     }
 
     private void setConflictCount(int e, int count) {
+        degreeSum += count - conflictCount[e];
         conflictCount[e] = count;
-        if (count > 0) conflicted.add(e);
-        else conflicted.remove(e);
+        if (count > 0) markConflicted(e);
+        else clearConflicted(e);
+    }
+
+    private void markConflicted(int e) {
+        if (conflictedAt[e] != NOT_CONFLICTED) return;
+        conflictedDense[conflictedCount] = e;
+        conflictedAt[e] = conflictedCount++;
+    }
+
+    private void clearConflicted(int e) {
+        int position = conflictedAt[e];
+        if (position == NOT_CONFLICTED) return;
+
+        // Move the last member into the hole so the dense prefix stays packed.
+        int last = conflictedDense[--conflictedCount];
+        conflictedDense[position] = last;
+        conflictedAt[last] = position;
+        conflictedAt[e] = NOT_CONFLICTED;
     }
 
     private void rebuildFrom(Solution s) {
+        for (int e = 0; e < model.eventCount(); e++) {
+            if (model.domainOf(e).isEmpty()) continue;
+            if (!s.isAssigned(e)) unassignedCount++;
+        }
         for (int e = 0; e < model.eventCount(); e++) {
             if (s.isAssigned(e)) addToOccupancy(e, s.choiceOf(e));
         }
@@ -196,26 +238,17 @@ public final class ConflictCounter {
     // Reporting
     // ─────────────────────────────────────────────────────────────────────────────
 
-    /** Events currently involved in at least one violation. Allocates — for reporting, not the loop. */
-    public List<Integer> conflictedEvents() {
-        return conflicted.toList();
-    }
-
     /**
      * A uniformly random conflicted event — the flowchart's "Var :- A randomly chosen variable".
      * O(1) and allocation-free; callers must check {@link #hasConflicts()} first.
      */
     public int randomConflictedEvent(java.util.Random random) {
-        return conflicted.randomMember(random);
-    }
-
-    public int conflictedEventCount() {
-        return conflicted.size();
+        return conflictedDense[random.nextInt(conflictedCount)];
     }
 
     /** True while any hard constraint is still violated — the flowchart's solution test. */
     public boolean hasConflicts() {
-        return !conflicted.isEmpty();
+        return conflictedCount > 0;
     }
 
     /**
@@ -227,17 +260,9 @@ public final class ConflictCounter {
      * caller via {@link CspModel#structurallyUnschedulableEvents()} instead of being retried.
      */
     public SolutionCost cost() {
-        int unassigned = 0;
-        for (int e = 0; e < model.eventCount(); e++) {
-            if (model.domainOf(e).isEmpty()) continue;
-            if (!solution.isAssigned(e)) unassigned++;
-        }
-
+        // Both totals are maintained by the mutators, so this is O(1) — see the field comment.
         // Each conflicting pair is counted by both of its members, hence the halving.
-        int degreeSum = 0;
-        for (int count : conflictCount) degreeSum += count;
-
-        return new SolutionCost(unassigned, degreeSum / 2);
+        return new SolutionCost(unassignedCount, degreeSum / 2);
     }
 
     /**

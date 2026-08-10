@@ -310,8 +310,8 @@ public class TimetableServiceImpl implements TimetableService {
 
     /**
      * Seeded when {@code timetable.solver.seed} is set, so a run can be reproduced exactly;
-     * otherwise fresh each time. The old solver used an unseeded Random with no way to pin it,
-     * which made a disputed timetable impossible to investigate.
+     * otherwise fresh each time. Without a pinnable seed a disputed timetable cannot be reproduced
+     * and investigated.
      */
     private Random newRandom() {
         Long seed = solverParameters.getSeed();

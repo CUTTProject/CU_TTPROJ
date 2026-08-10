@@ -3,9 +3,8 @@ package com.university.timetable_scheduler.solver;
 /**
  * The search objective. Lower is better; {@code 0} means every hard constraint is satisfied.
  *
- * <p>The old scorer summed three counts with weight 1 each, so it could not tell a catastrophe
- * (an event nobody can attend because it was never placed) from a nuisance (two events clashing,
- * which one move might fix). Weighting them separates those.
+ * <p>The weights separate a catastrophe (an event nobody can attend because it was never placed)
+ * from a nuisance (two events clashing, which one move might fix).
  *
  * <p><b>Why room clashes and lecturer/student clashes share one counter:</b> both are hard
  * constraints of equal severity, so they carry the same weight — which means the search only ever

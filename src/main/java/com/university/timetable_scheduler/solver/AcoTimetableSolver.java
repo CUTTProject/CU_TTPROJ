@@ -27,12 +27,9 @@ import java.util.Random;
  * is the standard remedy, and it is also what lets one implementation honour both documents.
  *
  * <p>The loop stops at the first of: cost 0 (provably feasible — nothing better exists), or
- * Time_Limit. It always returns the <b>best solution ever seen</b>.
- *
- * <p>That last point is a real bug fix, not a detail. The old loop took the best of five ants each
- * pass without including the incumbent in the comparison, so when every ant came out worse it
- * adopted the best ant anyway and the score was free to climb. A good solution found early could
- * be lost for good. Here {@code globalBest} is only ever replaced by something strictly better.
+ * Time_Limit. It always returns the <b>best solution ever seen</b>: {@code globalBest} is only ever
+ * replaced by something strictly better, so a good solution found early can never be lost when a
+ * later iteration comes out worse.
  *
  * <p>Single-threaded by design: deterministic under a fixed seed, which is worth more for
  * debugging and demos than the speedup would be.
@@ -67,7 +64,8 @@ public final class AcoTimetableSolver {
                     unschedulable.size());
         }
 
-        Deadline deadline = Deadline.in(Duration.ofSeconds(params.getTimeLimitSeconds()));
+        // Monotonic, so an NTP correction mid-solve cannot make the budget jump.
+        long deadlineNanos = startNanos + Duration.ofSeconds(params.getTimeLimitSeconds()).toNanos();
         PheromoneMatrix pheromones = new PheromoneMatrix(model, params);
         AntSolutionBuilder builder = new AntSolutionBuilder(model, pheromones, params, random);
         MinConflictsLocalSearch localSearch = new MinConflictsLocalSearch(model, params, random);
@@ -81,16 +79,16 @@ public final class AcoTimetableSolver {
 
         logStart();
 
-        while (!deadline.isExpired()) {
+        while (System.nanoTime() < deadlineNanos) {
             iteration++;
 
             // ── Ants: construct, then polish ────────────────────────────────────────────
             Solution iterationBest = null;
             SolutionCost iterationBestCost = null;
 
-            for (int ant = 0; ant < params.getAnts() && !deadline.isExpired(); ant++) {
+            for (int ant = 0; ant < params.getAnts() && System.nanoTime() < deadlineNanos; ant++) {
                 ConflictCounter counter = builder.build();
-                SolutionCost cost = localSearch.improve(counter, deadline);
+                SolutionCost cost = localSearch.improve(counter, deadlineNanos);
 
                 if (cost.isBetterThan(iterationBestCost)) {
                     iterationBestCost = cost;

@@ -38,11 +38,10 @@ public class CspModelBuilder {
     /**
      * Builds the CSP for one academic period.
      *
-     * <p><b>Scoping to a period is a bug fix, not a refactor.</b> The previous solver loaded events
-     * with {@code findEventByFilter(schoolId, null, null, null, null)} — a query with no
-     * academic-period parameter at all — so generating Fall's timetable rescheduled and persisted
-     * every event in Spring and every archived period too. The caller never noticed because
-     * {@code generateTimetable} reads results back scoped to a single period.
+     * <p><b>Scoping to the academic period is load-bearing.</b> A query without the period parameter
+     * would have this run reschedule and persist every event in every other period too, and the
+     * caller would not notice — {@code generateTimetable} reads its results back scoped to one
+     * period regardless.
      *
      * @return empty when there is nothing to solve (no events, rooms, or timeslots)
      */
@@ -242,8 +241,8 @@ public class CspModelBuilder {
      *
      * <p><b>The match is exact.</b> A 90-minute event against 1-hour slots therefore produces no
      * blocks, an empty domain, and an event no algorithm can place. Rather than let the solver
-     * grind on that forever (the old loop burned all 10,000 iterations on it, silently), such
-     * events are excluded from the search and reported via
+     * grind on that for the whole time budget, such events are excluded from the search and
+     * reported via
      * {@link CspModel#structurallyUnschedulableEvents()}. Durations are supplied per-row by the CSV
      * upload, so this surfaces as a data problem where it belongs.
      */

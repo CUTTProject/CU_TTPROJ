@@ -17,10 +17,9 @@ import java.util.Random;
  *   where η(e,k) = 1 / (1 + CONFLICTS(csp, e, k, current))
  * </pre>
  *
- * <p>Contrast with the old loop, which sampled <em>uniformly</em> from whichever candidates were
- * completely clean. Uniform sampling has no gradient and no memory: it could not prefer a
- * one-clash placement over a five-clash placement, and it could not remember that a given room
- * worked well last iteration. Both halves of the formula above exist to fix one of those.
+ * <p>Both halves of that formula earn their place. Uniform sampling over the clean candidates would
+ * have no gradient and no memory: it could not prefer a one-clash placement over a five-clash one
+ * (η), nor remember that a given room worked well last iteration (τ).
  *
  * <p>Ants build from empty rather than perturbing an incumbent. That is what makes the pheromone
  * table meaningful — τ is only informative if it gets to shape a whole solution.

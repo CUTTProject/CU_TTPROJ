@@ -127,6 +127,38 @@ class PheromoneMatrixTest {
     }
 
     @Test
+    @DisplayName("lowering the bounds clamps existing cells, so the winner still outranks the rest")
+    void loweringBoundsClampsExistingValues() {
+        // The constructor seeds tauMax from an optimistic cost of 1, so the first real cost always
+        // lowers it. Without clamping, every cell is left stranded above the new ceiling: deposit
+        // would snap the best solution's cells DOWN to tauMax while the cells it rejected stayed
+        // high, pointing the ants away from the incumbent for ~50 iterations.
+        CspModel model = smallModel();
+        SolverParameters params = SolverFixture.params(1);
+        PheromoneMatrix pheromones = new PheromoneMatrix(model, params);
+
+        pheromones.recalculateBounds(30);   // tauMax falls sharply from its optimistic seed
+
+        for (int e = 0; e < model.eventCount(); e++) {
+            for (int k = 0; k < model.domainOf(e).size(); k++) {
+                assertThat(pheromones.get(e, k))
+                        .as("cell (%s, %s) must be inside the new band", e, k)
+                        .isBetween(pheromones.tauMin(), pheromones.tauMax());
+            }
+        }
+
+        Solution best = Solution.empty(model.eventCount());
+        best.setChoice(0, 2);
+
+        pheromones.evaporate();
+        pheromones.deposit(best, new SolutionCost(0, 3), params.getDepositConstant());
+
+        assertThat(pheromones.get(0, 2))
+                .as("the reinforced candidate must not end up below one nobody used")
+                .isGreaterThan(pheromones.get(0, 3));
+    }
+
+    @Test
     @DisplayName("reinitialise flattens the table back to tauMax")
     void reinitialiseRestoresExploration() {
         CspModel model = smallModel();

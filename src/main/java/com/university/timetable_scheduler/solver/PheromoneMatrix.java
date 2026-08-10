@@ -1,8 +1,7 @@
 package com.university.timetable_scheduler.solver;
 
 /**
- * The pheromone table τ — the colony's shared memory, and the thing the previous implementation
- * was missing entirely (it had a constant named {@code ANTS} and nothing else).
+ * The pheromone table τ — the colony's shared memory.
  *
  * <p>{@code τ[e][k]} is the learned desirability of giving event {@code e} candidate {@code k}.
  * Every iteration, good placements are reinforced and everything slowly fades, so the colony
@@ -94,10 +93,24 @@ public final class PheromoneMatrix {
      * τmax tracks the incumbent because the useful range of τ depends on how good "good" currently
      * is. τmin scales with domain size: the more candidates competing for an event, the lower the
      * floor has to sit before it stops flattening the distribution into noise.
+     *
+     * <p><b>Existing values are clamped into the new band.</b> Without this, moving the bounds
+     * leaves cells stranded outside them: {@link #evaporate()} only floors and {@link #deposit}
+     * only caps, so nothing pulls an out-of-range cell back. The damaging case is the first call —
+     * the constructor seeds τmax from an optimistic cost of 1, so the first real cost lowers it
+     * sharply, and every cell is then above the new ceiling. Deposit would snap the winner's cells
+     * down to τmax while the cells it rejected stayed high, inverting the signal until evaporation
+     * caught up ~50 iterations later.
      */
     public void recalculateBounds(int bestCost) {
         this.tauMax = 1.0 / (evaporationRate * (1.0 + bestCost));
         this.tauMin = tauMax / (2.0 * averageDomainSize);
+
+        for (double[] row : tau) {
+            for (int k = 0; k < row.length; k++) {
+                row[k] = Math.min(tauMax, Math.max(tauMin, row[k]));
+            }
+        }
     }
 
     public double tauMax() { return tauMax; }
