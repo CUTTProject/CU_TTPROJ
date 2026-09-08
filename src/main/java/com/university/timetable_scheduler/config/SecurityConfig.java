@@ -21,13 +21,9 @@ public class SecurityConfig {
         http
                 .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers(
-                                "/swagger-ui/**",
-                                "/swagger-ui.html",
-                                "/v3/api-docs/**",
-                                "/api/auth/**",
-                                "/api/schools/create"
-                        ).permitAll()
+                        // See PublicEndpoints: JwtAuthFilter must skip the same
+                        // list, or it rejects the request before permitAll runs.
+                        .requestMatchers(PublicEndpoints.PATTERNS).permitAll()
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);

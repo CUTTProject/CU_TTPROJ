@@ -11,22 +11,44 @@ databases:
     databaseName: timetable_scheduler
     user: timetable
     plan: free
-    # Free Postgres on Render expires 30 days after creation and is then deleted.
-    # Fine for a demo or a viva; note the date and recreate if the project outlives it.
+    # MUST match the web service's region below. Render's internal networking is
+    # per-region: a database in another region is unreachable from the service,
+    # and the app fails at startup with a connection error rather than anything
+    # that points at the real cause.
+    region: frankfurt
+    # Free Postgres on Render expires 30 days after CREATION and is then deleted,
+    # with no backups. Note the date. Re-seeding is the bulk-upload endpoints plus
+    # docs/x.csv, so recreating it is minutes — but the data does not survive.
 
 services:
   - type: web
     name: timetable-scheduler
     runtime: docker
     plan: free
+    region: frankfurt
     dockerfilePath: ./Dockerfile
-    healthCheckPath: /swagger-ui/index.html
+
+    # Actuator, not the Swagger page. /swagger-ui/index.html is a static webjar:
+    # it answers 200 as soon as the servlet container is up, even if the datasource
+    # never connected — so a deploy with a broken database would go live looking
+    # healthy. /actuator/health pings the DB, so that deploy fails instead.
+    healthCheckPath: /actuator/health
 
     envVars:
       # ── Database — injected from the managed Postgres above ───────────────
       # Render exposes the connection only as separate parts, never as a JDBC
       # URL, which is why application.properties assembles it from DB_HOST /
       # DB_PORT / DB_NAME rather than requiring DB_URL.
+      #
+      # `property: host` is the INTERNAL hostname. Internal traffic does not need
+      # SSL, which is why the URL carries no ?sslmode= — do not "fix" that. The
+      # external connection string from the dashboard (for psql/DBeaver) is a
+      # different host and DOES require sslmode=require.
+      #
+      # To use an external Postgres instead (Neon, Supabase — free tiers that do
+      # not expire after 30 days), delete these five entries and set DB_URL,
+      # DB_USERNAME and DB_PASSWORD by hand: application.properties already
+      # resolves DB_URL ahead of the parts, so no code changes.
       - key: DB_HOST
         fromDatabase: { name: timetable-db, property: host }
       - key: DB_PORT
@@ -37,6 +59,18 @@ services:
         fromDatabase: { name: timetable-db, property: user }
       - key: DB_PASSWORD
         fromDatabase: { name: timetable-db, property: password }
+
+      # Hikari defaults to 10 connections. Render's free Postgres caps connections
+      # low, and a rolling deploy runs the old and new instances at once — briefly
+      # 20 — which exhausts the cap and fails the deploy with a "too many clients"
+      # error that reads like an app bug. 5 leaves headroom for a psql session.
+      - key: SPRING_DATASOURCE_HIKARI_MAXIMUM_POOL_SIZE
+        value: "5"
+
+      # show-sql/format_sql are on in application.properties for local work. Left
+      # on here they pretty-print every query into Render's log stream.
+      - key: SPRING_JPA_SHOW_SQL
+        value: "false"
 
       # ── Secrets — set this in the dashboard, it is not in the repo ────────
       # Generate with:  openssl rand -base64 48
@@ -53,8 +87,10 @@ services:
       #
       # 45s keeps the request inside every proxy timeout. The trade-off is real
       # and worth stating out loud: the budget is WALL-CLOCK, so fewer seconds
-      # means fewer ant iterations and measurably worse timetables. Benchmark
-      # locally at 600s; treat this instance as a functional demo, not evidence.
+      # means fewer ant iterations and measurably worse timetables. Worse still
+      # on the free plan's 0.1 shared CPU — 45 wall-clock seconds buys roughly
+      # 4.5 CPU-seconds of ants against 600 locally. Benchmark locally at 600s;
+      # treat this instance as a functional demo, not evidence.
       - key: TIMETABLE_SOLVER_TIME_LIMIT_SECONDS
         value: "45"
 
