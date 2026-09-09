@@ -17,12 +17,11 @@ import java.util.Random;
  *   where η(e,k) = 1 / (1 + CONFLICTS(csp, e, k, current))
  * </pre>
  *
- * <p>Both halves of that formula earn their place. Uniform sampling over the clean candidates would
- * have no gradient and no memory: it could not prefer a one-clash placement over a five-clash one
- * (η), nor remember that a given room worked well last iteration (τ).
+ * <p>Both halves earn their place: uniform sampling over clean candidates could neither prefer a
+ * one-clash placement to a five-clash one (η) nor remember what worked last iteration (τ).
  *
- * <p>Ants build from empty rather than perturbing an incumbent. That is what makes the pheromone
- * table meaningful — τ is only informative if it gets to shape a whole solution.
+ * <p>Ants build from empty rather than perturbing an incumbent — τ is only informative if it shapes
+ * a whole solution.
  */
 public final class AntSolutionBuilder {
 

@@ -239,12 +239,9 @@ public class CspModelBuilder {
      *
      * <p>Contiguity means slot[j-1] ends exactly when slot[j] starts — a gap breaks the run.
      *
-     * <p><b>The match is exact.</b> A 90-minute event against 1-hour slots therefore produces no
-     * blocks, an empty domain, and an event no algorithm can place. Rather than let the solver
-     * grind on that for the whole time budget, such events are excluded from the search and
-     * reported via
-     * {@link CspModel#structurallyUnschedulableEvents()}. Durations are supplied per-row by the CSV
-     * upload, so this surfaces as a data problem where it belongs.
+     * <p><b>The match is exact</b>, so a 90-minute event against 1-hour slots yields no blocks and an
+     * empty domain. Those events are excluded from the search and reported via
+     * {@link CspModel#structurallyUnschedulableEvents()} rather than consuming the time budget.
      */
     private List<TimeslotBlock> buildContiguousBlocks(Map<TimeslotEnum.TimeslotDay, List<Timeslot>> slotsByDay,
                                                       Duration needed) {
@@ -294,11 +291,9 @@ public class CspModelBuilder {
      * Most-constrained-first (the CSP "minimum remaining values" heuristic): fewest candidates
      * first, ties broken by highest conflict-graph degree.
      *
-     * <p>Ants assign in this order so the events with the fewest options get placed while the
-     * timetable is still mostly empty. Leaving them until last is how you end up with an event
-     * that has nowhere legal to go.
-     *
-     * <p>Empty-domain events are excluded outright — there is nothing to choose for them.
+     * <p>Ants assign in this order so the most constrained events are placed while the timetable is
+     * still empty; leaving them last is how one ends up with nowhere legal to go. Empty-domain
+     * events are excluded outright.
      */
     private int[] buildSearchOrder(List<List<Candidate>> domains, int[][] conflictNeighbours) {
         return java.util.stream.IntStream.range(0, domains.size())

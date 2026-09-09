@@ -92,8 +92,70 @@ is **wall-clock**, fewer seconds means fewer ant iterations and measurably worse
 
 **Benchmark locally at 600s. Treat the hosted instance as a functional demo, not as evidence.**
 
-The proper fix is to make generation asynchronous — return a job id immediately and let the client
-poll. That is the change to make if the deployment needs to produce real timetables.
+Generation is now asynchronous, which is what makes the full budget usable: `POST /timetable/generate`
+returns a job id immediately and the finished timetable is delivered to the school's webhook, so no
+proxy timeout constrains the solve. See **Webhooks** below.
+
+
+## Webhooks
+
+Generation runs in the background, so results are pushed rather than returned inline. Each school
+registers one URL and receives every event on it.
+
+```
+PUT /api/schools/webhook     {"webhookUrl": "https://example.com/hooks/timetable"}
+```
+
+The response contains `webhookSecret` **once**. It cannot be read back — rotate with
+`{"rotateSecret": true}` if you lose it. `POST /api/schools/webhook/test` sends a single
+`WEBHOOK_TEST` delivery and reports the status code your endpoint returned, so you can verify your
+handler without waiting out a ten-minute solve.
+
+Every delivery is a POST with this body:
+
+```json
+{ "event": "GENERATED_TIMETABLE", "deliveryId": "…", "schoolId": "…",
+  "timestamp": "2026-09-09T10:15:00Z", "data": { } }
+```
+
+| Event | Meaning |
+|---|---|
+| `WEBHOOK_TEST` | Sent only by the test endpoint. |
+| `GENERATION_STARTED` | Job accepted; carries the problem size and how many events have no possible slot. |
+| `GENERATED_TIMETABLE` | The schedule. `feasible` says whether it is conflict-free; `stopReason` says why the solver stopped. |
+| `TIMETABLE_CONFLICTS` | What the produced timetable still violates — room clashes, lecturer/student clashes, unplaced events. |
+| `UNSCHEDULABLE_EVENTS` | Events no room-and-slot combination can satisfy. A data problem: more solver time will not help. |
+| `CONFLICT_MAP` | The structural conflict graph — which sections can never share a slot, and why. |
+| `GENERATION_FAILED` | The run did not produce a timetable. |
+| `BULK_UPLOAD_RESULT` | A CSV or JSON upload committed. |
+
+### Verifying a delivery
+
+**Do this before trusting a payload.** The URL is yours, but nothing stops anyone else POSTing to it.
+
+Headers: `X-Timetable-Event`, `X-Timetable-Delivery`, `X-Timetable-Timestamp`, and
+`X-Timetable-Signature: t=<epoch>,v1=<hex>`.
+
+The signature is `HMAC-SHA256(secret, "<timestamp>.<raw body>")`, hex-encoded. Compute it over the
+**raw bytes**, before any JSON parsing — re-serialising the body changes it.
+
+```python
+expected = hmac.new(secret.encode(), f"{ts}.".encode() + raw_body, hashlib.sha256).hexdigest()
+if not hmac.compare_digest(expected, received):   # constant-time
+    return 401
+```
+
+Also reject deliveries whose timestamp is more than a few minutes old — the timestamp is inside the
+signed string precisely so it cannot be rewritten — and deduplicate on `X-Timetable-Delivery`, which
+stays the same across retries of one event.
+
+A delivery is retried up to 3 times (2s then 8s) on a timeout or a 5xx. A 4xx is treated as final
+and is not retried. Return 2xx as soon as you have stored the payload; do the work afterwards.
+
+> **Deliveries are best effort and are not persisted.** If your endpoint is down for all three
+> attempts, that notification is gone — but the timetable itself is not. It is written to the
+> database and remains readable via the API.
+
 
 ## Running without Docker
 

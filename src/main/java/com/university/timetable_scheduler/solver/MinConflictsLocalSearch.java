@@ -3,38 +3,16 @@ package com.university.timetable_scheduler.solver;
 import java.util.Random;
 
 /**
- * <b>This class is Method 1 from the spec</b> — the page-3 flowchart, implemented as written.
+ * Method 1 from the spec (page-3 flowchart): repeatedly pick a conflicted event and move it to the
+ * value that <i>minimises</i> conflicts — an argmin over the domain, not a clean/not-clean split,
+ * so it still progresses when nothing clean exists.
  *
- * <p>Flowchart → code:
- * <pre>
- *   Input: CSP, Time_Limit          → the model, plus a nanoTime deadline
- *   Current :- complete assignment  → the ant's constructed solution (already complete)
- *   Time_Limit reached?             → System.nanoTime() >= deadlineNanos
- *   Is Current the CSP solution?    → !counter.hasConflicts()   → return current
- *   Var :- a randomly chosen var    → counter.randomConflictedEvent(random)
- *   Value :- a value v (Note 1)     → argMinConflicts(...)      ← the piece that was missing
- *   Set Var = Value                 → counter.assign(var, value)
- *   Return current OR failure       → best-ever solution, feasible or not
- * </pre>
+ * <p>Runs as ACO's daemon step: construction explores, this exploits. Most of the measurable
+ * improvement comes from here.
  *
- * <p>Note 1 is the important line: <i>"the value v for var that <b>minimises</b>
- * CONFLICTS(csp, var, v, current)"</i> — an argmin over the domain, not a clean/not-clean split.
- * Picking randomly among violating candidates when nothing clean exists is exactly the situation
- * min-conflicts is meant to handle.
- *
- * <p>In the hybrid this runs as ACO's <b>daemon step</b>: each ant constructs a solution, then this
- * polishes it before it is scored and allowed to deposit pheromone. Construction explores; this
- * exploits. Most of the measurable improvement comes from here — which is why a pure constructive
- * ACO would underperform on this problem.
- *
- * <p>Two additions beyond the literal flowchart, both standard and both necessary:
- * <ul>
- *   <li><b>Random walk moves.</b> Pure min-conflicts stalls on plateaux where no single move
- *       improves anything. A small chance of an arbitrary move walks off them.</li>
- *   <li><b>Best-ever tracking.</b> Because walk moves (and ties) can make things worse, the search
- *       remembers its best state and restores it at the end. The flowchart's "return current" is
- *       safe only for a search that never worsens; this one can.</li>
- * </ul>
+ * <p>Two additions beyond the flowchart: random walk moves, to escape plateaux where no single move
+ * improves anything; and best-ever tracking, because those moves can worsen the state and the
+ * flowchart's "return current" assumes a search that never does.
  */
 public final class MinConflictsLocalSearch {
 

@@ -10,27 +10,14 @@ import org.springframework.core.env.Environment;
 /**
  * Fails startup with a readable message when the database environment variables are missing.
  *
- * <p>Without this check the failure is genuinely hard to read. {@code spring.datasource.url} is
- * assembled from placeholders, and Spring Boot's configuration-property binder ignores
- * placeholders it cannot resolve rather than throwing — so an unset {@code DB_HOST} is passed to
- * the driver <em>literally</em>, as the six characters {@code ${DB_HOST}}. The driver then fails
- * to resolve that as a hostname, Hibernate never gets a connection to read JDBC metadata from,
- * and the last error printed is:
+ * <p>Otherwise the failure is opaque: the binder passes an unresolved {@code ${DB_HOST}} to the
+ * driver literally, Hibernate never gets a connection, and the only error printed is
+ * "Unable to determine Dialect without JDBC metadata" — which names neither the database nor the
+ * missing variable.
  *
- * <pre>Unable to determine Dialect without JDBC metadata</pre>
- *
- * which mentions neither the database nor the variable that was actually missing, and sends you
- * looking for a Hibernate dialect setting that was never the problem. (An earlier version of
- * application.properties defaulted the host to {@code localhost}, which was worse still: a
- * container with no configuration dialled itself and reported "connection refused".)
- *
- * <p>Hooked to {@link ApplicationPreparedEvent}: the environment is fully populated by then —
- * including the optional {@code local.properties} import that IDE runs rely on, so a local
- * developer who configures {@code DB_URL} there is not tripped up — while bean creation, and
- * therefore the datasource, has not started.
- *
- * <p>Registered explicitly in {@code TimetableSchedulerApplication.main}. A listener for an event
- * this early cannot be a {@code @Component}: the context that would scan for it does not exist yet.
+ * <p>Hooked to {@link ApplicationPreparedEvent}, when the environment (including the optional
+ * {@code local.properties} import) is populated but the datasource has not started. Registered by
+ * hand in {@code main}: an event this early cannot be a {@code @Component}.
  */
 public class DatabaseConfigurationCheck implements ApplicationListener<ApplicationPreparedEvent> {
 

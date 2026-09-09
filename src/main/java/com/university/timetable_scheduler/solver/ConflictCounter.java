@@ -5,27 +5,17 @@ import java.util.Set;
 import java.util.UUID;
 
 /**
- * Counts hard-constraint violations, and maintains that count incrementally as events move.
+ * Counts hard-constraint violations, maintained incrementally as events move — the spec's
+ * {@code CONFLICTS(csp, var, v, current)}.
  *
- * <p><b>This class is the spec's {@code CONFLICTS(csp, var, v, current)} (page 4, Note 1).</b>
- * {@link #conflictsIfAssigned} returns a count rather than a clean/not-clean verdict, which is what
- * lets min-conflicts pick the least-bad move and gives the ants a meaningful heuristic — a search
- * cannot descend a gradient it never computes.
+ * <p>{@link #conflictsIfAssigned} returns a count, not a clean/not-clean verdict: min-conflicts and
+ * the ant heuristic both need a gradient to descend.
  *
- * <p><b>Why it is fast.</b> Two indices keep every query proportional to a candidate's own
- * footprint rather than to the size of the school:
- * <ul>
- *   <li><i>Room exclusivity</i> — a {@code (room, slot) -> events} occupancy table, so finding who
- *       else is in this room at this time is a lookup, not a scan.</li>
- *   <li><i>Colouring</i> — only the event's conflict-graph neighbours are examined, and that list
- *       is short.</li>
- * </ul>
+ * <p>Fast because two indices keep each query proportional to a candidate's own footprint: a
+ * {@code (room, slot) -> events} occupancy table, and the event's short conflict-graph neighbour list.
  *
- * <p><b>Statefulness.</b> An instance owns a {@link Solution} and mutates alongside it. Call
- * {@link #assign}/{@link #unassign} rather than touching the Solution directly, or the indices
- * drift out of sync with the assignment.
- *
- * <p>Not thread-safe. Each ant builds with its own instance.
+ * <p>Owns a {@link Solution} and mutates alongside it — use {@link #assign}/{@link #unassign}, or the
+ * indices drift out of sync. Not thread-safe; one instance per ant.
  */
 public final class ConflictCounter {
 
@@ -48,11 +38,9 @@ public final class ConflictCounter {
     private int degreeSum;
     private int unassignedCount;
 
-    // ── Conflicted-event set: dense/sparse pair giving O(1) add, remove and uniform random pick ──
-    // The random pick is the flowchart's "Var :- A randomly chosen variable", done every
-    // min-conflicts step. A HashSet would force an O(n) walk or a fresh list allocation each time.
-    // dense holds the members packed into a prefix; conflictedAt maps an event back to its slot so
-    // removal can swap-with-last instead of shifting.
+    // Conflicted-event set as a dense/sparse pair: O(1) add, remove and uniform random pick.
+    // The pick happens every min-conflicts step, where a HashSet would cost an O(n) walk or a
+    // fresh allocation. conflictedAt maps an event back to its slot so removal swaps with last.
 
     private static final int NOT_CONFLICTED = -1;
 
@@ -78,10 +66,6 @@ public final class ConflictCounter {
     public Solution solution() {
         return solution;
     }
-
-    // ─────────────────────────────────────────────────────────────────────────────
-    // The core question: CONFLICTS(csp, var, v, current)
-    // ─────────────────────────────────────────────────────────────────────────────
 
     /**
      * How many hard-constraint violations would result from giving event {@code e} candidate
@@ -260,18 +244,16 @@ public final class ConflictCounter {
      * caller via {@link CspModel#structurallyUnschedulableEvents()} instead of being retried.
      */
     public SolutionCost cost() {
-        // Both totals are maintained by the mutators, so this is O(1) — see the field comment.
-        // Each conflicting pair is counted by both of its members, hence the halving.
+        // O(1): the mutators maintain both totals. Each pair is counted by both members, hence /2.
         return new SolutionCost(unassignedCount, degreeSum / 2);
     }
 
     /**
      * The human-facing breakdown, split by violation reason.
      *
-     * <p>Deliberately separate from {@link #cost()} and run once at the end: categorising every
-     * pair costs more than the search needs, since both reasons carry the same weight anyway.
-     * A pair violating both rules is attributed to the room clash, matching the previous
-     * implementation's precedence.
+     * <p>Separate from {@link #cost()} and run once at the end: categorising every pair costs more
+     * than the search needs, since both reasons carry the same weight. A pair violating both is
+     * attributed to the room clash.
      */
     public CostBreakdown breakdown() {
         int roomClashes = 0;

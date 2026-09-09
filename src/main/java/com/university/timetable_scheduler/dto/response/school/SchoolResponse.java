@@ -14,4 +14,8 @@ public class SchoolResponse {
     private String schoolAdminEmail;
     private String schoolPhone;
     private SchoolEnum.SchoolStatus schoolStatus;
+
+    /** The signing secret is deliberately absent: shown once when issued, never readable after. */
+    private String webhookUrl;
+    private Boolean webhookEnabled;
 }

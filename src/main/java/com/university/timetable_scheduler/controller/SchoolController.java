@@ -35,5 +35,24 @@ public class SchoolController {
     public DeleteSchoolResponse deleteSchool(@Valid @ModelAttribute DeleteSchoolRequest request) {
         return schoolService.deleteSchool(request);
     }
+
+    @Operation(summary = "Set, update or clear the webhook that receives generated timetables. "
+            + "Send a blank url to clear it. The signing secret is returned once, here.")
+    @PutMapping("/webhook")
+    public WebhookConfigResponse configureWebhook(@Valid @RequestBody ConfigureWebhookRequest request) {
+        return schoolService.configureWebhook(request);
+    }
+
+    @Operation(summary = "Read the webhook settings. The signing secret is never returned.")
+    @GetMapping("/webhook")
+    public WebhookConfigResponse readWebhookConfig() {
+        return schoolService.readWebhookConfig();
+    }
+
+    @Operation(summary = "Send a single test delivery to the configured webhook and report the result.")
+    @PostMapping("/webhook/test")
+    public WebhookTestResponse testWebhook() {
+        return schoolService.testWebhook();
+    }
 }
 

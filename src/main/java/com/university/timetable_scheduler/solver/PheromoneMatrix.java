@@ -1,23 +1,13 @@
 package com.university.timetable_scheduler.solver;
 
 /**
- * The pheromone table τ — the colony's shared memory.
+ * The pheromone table τ — the colony's shared memory. {@code τ[e][k]} is the learned desirability of
+ * giving event {@code e} candidate {@code k}: good placements are reinforced, everything else fades.
  *
- * <p>{@code τ[e][k]} is the learned desirability of giving event {@code e} candidate {@code k}.
- * Every iteration, good placements are reinforced and everything slowly fades, so the colony
- * gradually concentrates on regions of the search space that have paid off — while
- * {@link AntSolutionBuilder} keeps sampling probabilistically so it never fully commits.
- *
- * <p>This is the <b>MAX-MIN Ant System</b> (Stützle &amp; Hoos) variant:
- * <ol>
- *   <li><b>Only the best ant deposits.</b> Letting every ant deposit averages the signal into
- *       mush; MMAS follows the winner.</li>
- *   <li><b>τ is clamped to {@code [τmin, τmax]}.</b> The safeguard that makes (1) survivable —
- *       without a floor, a candidate that goes unused early drops to ~0 and can never be sampled
- *       again, and the colony converges prematurely onto whatever it stumbled on first.</li>
- *   <li><b>τ starts at τmax.</b> An optimistic start means heavy early exploration, with
- *       evaporation gradually sharpening the distribution.</li>
- * </ol>
+ * <p><b>MAX-MIN Ant System</b> (Stützle &amp; Hoos): only the best ant deposits, since averaging
+ * every ant's deposit turns the signal to mush; τ is clamped to {@code [τmin, τmax]}, without which
+ * an early-unused candidate drops to ~0 and can never be sampled again; and τ starts at τmax, so
+ * early search explores broadly and evaporation sharpens it.
  */
 public final class PheromoneMatrix {
 
@@ -85,22 +75,13 @@ public final class PheromoneMatrix {
     }
 
     /**
-     * Retunes {@code [τmin, τmax]} to the best cost seen so far, per the MMAS formulae:
-     * <pre>
-     *   τmax = 1 / (ρ · (1 + cost_best))
-     *   τmin = τmax / (2 · averageDomainSize)
-     * </pre>
-     * τmax tracks the incumbent because the useful range of τ depends on how good "good" currently
-     * is. τmin scales with domain size: the more candidates competing for an event, the lower the
-     * floor has to sit before it stops flattening the distribution into noise.
+     * Retunes the band to the best cost so far, per the MMAS formulae:
+     * {@code τmax = 1 / (ρ · (1 + cost_best))} and {@code τmin = τmax / (2 · averageDomainSize)}.
      *
-     * <p><b>Existing values are clamped into the new band.</b> Without this, moving the bounds
-     * leaves cells stranded outside them: {@link #evaporate()} only floors and {@link #deposit}
-     * only caps, so nothing pulls an out-of-range cell back. The damaging case is the first call —
-     * the constructor seeds τmax from an optimistic cost of 1, so the first real cost lowers it
-     * sharply, and every cell is then above the new ceiling. Deposit would snap the winner's cells
-     * down to τmax while the cells it rejected stayed high, inverting the signal until evaporation
-     * caught up ~50 iterations later.
+     * <p><b>Existing values are clamped into the new band.</b> {@link #evaporate()} only floors and
+     * {@link #deposit} only caps, so nothing else pulls a stranded cell back. On the first call every
+     * cell sits above the new ceiling — deposit would snap the winner's cells down while the rejected
+     * ones stayed high, inverting the signal for ~50 iterations.
      */
     public void recalculateBounds(int bestCost) {
         this.tauMax = 1.0 / (evaporationRate * (1.0 + bestCost));

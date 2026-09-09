@@ -8,9 +8,8 @@ import java.util.List;
 import java.util.Random;
 
 /**
- * MAX-MIN Ant System with a min-conflicts daemon — the hybrid that satisfies both halves of the
- * brief: real ACO with pheromones for the stakeholder, and the spec's Method 1 local search
- * (page 3) doing the exploitation.
+ * MAX-MIN Ant System with a min-conflicts daemon. Pure constructive ACO underperforms on university
+ * timetabling; hybridising with local search is the standard remedy.
  *
  * <p>One iteration:
  * <pre>
@@ -23,16 +22,11 @@ import java.util.Random;
  *   if stagnating, flatten τ and start exploring again      (MMAS restart)
  * </pre>
  *
- * <p>Pure constructive ACO underperforms on university timetabling; hybridising with local search
- * is the standard remedy, and it is also what lets one implementation honour both documents.
+ * <p>Stops at cost 0 (provably feasible) or Time_Limit, and always returns the best solution ever
+ * seen — {@code globalBest} is only replaced by something strictly better.
  *
- * <p>The loop stops at the first of: cost 0 (provably feasible — nothing better exists), or
- * Time_Limit. It always returns the <b>best solution ever seen</b>: {@code globalBest} is only ever
- * replaced by something strictly better, so a good solution found early can never be lost when a
- * later iteration comes out worse.
- *
- * <p>Single-threaded by design: deterministic under a fixed seed, which is worth more for
- * debugging and demos than the speedup would be.
+ * <p>Single-threaded by design: deterministic under a fixed seed, which is worth more than the
+ * speedup for debugging and demos.
  */
 public final class AcoTimetableSolver {
 

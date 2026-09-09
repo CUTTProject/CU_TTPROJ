@@ -23,6 +23,10 @@ import com.university.timetable_scheduler.service.TimetableService;
 import com.university.timetable_scheduler.solver.*;
 import com.university.timetable_scheduler.status.*;
 import com.university.timetable_scheduler.tenant.TenantContext;
+import com.university.timetable_scheduler.status.WebhookEnum;
+import com.university.timetable_scheduler.webhook.WebhookService;
+import com.university.timetable_scheduler.webhook.payload.BulkUploadResultPayload;
+import com.university.timetable_scheduler.webhook.payload.ConflictMapPayload;
 import lombok.AllArgsConstructor;
 import org.jgrapht.Graph;
 import org.jgrapht.graph.DefaultEdge;
@@ -47,7 +51,7 @@ import java.util.stream.Collectors;
 @AllArgsConstructor
 public class TimetableServiceImpl implements TimetableService {
 
-    // static, so Lombok's @AllArgsConstructor leaves it out of the generated constructor
+    // static, so @AllArgsConstructor leaves it out of the constructor
     private static final Logger log = LoggerFactory.getLogger(TimetableServiceImpl.class);
 
     private CourseRepository courseRepository;
@@ -62,6 +66,8 @@ public class TimetableServiceImpl implements TimetableService {
     private AcademicPeriodRepository academicPeriodRepository;
     private SchoolRepository schoolRepository;
     private SectionRoomRepository sectionRoomRepository;
+
+    private WebhookService webhookService;
 
     private CspModelBuilder cspModelBuilder;
     private ConflictGraphBuilder conflictGraphBuilder;
@@ -104,6 +110,13 @@ public class TimetableServiceImpl implements TimetableService {
             response.setResponseCode("200");
             response.setResponseMessage("Upload complete. " + rows.size() + " row(s) processed.");
 
+            // Transactional, so WebhookService holds this until after commit — otherwise the
+            // receiver hears about rows it cannot read yet, or that roll back.
+            webhookService.publish(TenantContext.getSchoolId(),
+                    WebhookEnum.WebhookEventType.BULK_UPLOAD_RESULT,
+                    new BulkUploadResultPayload(academicPeriodId,
+                            BulkUploadResultPayload.SOURCE_CSV, rows.size()));
+
         } catch (RuntimeException e) {
             throw e;
         } catch (Exception e) {
@@ -142,12 +155,16 @@ public class TimetableServiceImpl implements TimetableService {
         response.setError(false);
         response.setResponseCode("200");
         response.setResponseMessage("Upload complete. " + rows.size() + " row(s) processed.");
+
+        // Deferred to after-commit; see bulkUploadTimetable.
+        webhookService.publish(TenantContext.getSchoolId(),
+                WebhookEnum.WebhookEventType.BULK_UPLOAD_RESULT,
+                new BulkUploadResultPayload(request.getAcademicPeriodId(),
+                        BulkUploadResultPayload.SOURCE_JSON, rows.size()));
         return response;
     }
 
-    /**
-     * Core row-processing logic shared by both the CSV file upload and the array upload.
-     */
+    /** Shared by the CSV and array uploads. */
     private void processRows(List<BulkUploadTimetableFileRequest> rows, UUID academicPeriodId) {
         School school = currentSchool();
         UUID schoolId = school.getId();
@@ -274,24 +291,52 @@ public class TimetableServiceImpl implements TimetableService {
 
 
     /**
-     * Runs the hybrid ACO + min-conflicts solver for one academic period, persists the chosen
-     * timeslot/room onto each Event, and returns the assignment.
+     * Everything a run produced, not only the part that gets persisted — the previous
+     * {@code solve()} logged the rest of the {@link SolverResult} and dropped it.
      *
-     * <p>The algorithm itself lives in {@code com.university.timetable_scheduler.solver}; this
-     * method is only the seam between the database and the solver. See
-     * {@link com.university.timetable_scheduler.solver.AcoTimetableSolver} for the iteration loop
-     * and {@link com.university.timetable_scheduler.solver.MinConflictsLocalSearch} for the spec's
-     * Method 1.
+     * <p>{@code assignment} is ids, not entities; see {@link #applyAssignment}.
      */
-    @Override
+    public record SolveOutcome(SolverResult result, Map<UUID, TimetableService.AssignmentIds> assignment) {}
+
+    /**
+     * Resolved on the caller's thread so a bad id is still a synchronous 400, rather than a 202
+     * followed by a failure webhook.
+     */
+    @Transactional(readOnly = true)
+    public AcademicPeriod resolvePeriod(UUID schoolId, String rawAcademicPeriodId) {
+        return academicPeriodRepository
+                .findByIdAndSchoolId(parseAcademicPeriodId(rawAcademicPeriodId), schoolId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                        "Academic period with id, %s, does not exist".formatted(rawAcademicPeriodId)));
+    }
+
+    /** Gives the school a default week if it has never defined one. */
     @Transactional
-    public Map<UUID, EventAssignment> solve(UUID academicPeriodId) {
-        UUID schoolId = TenantContext.getSchoolId();
+    public void prepareTimeslots(UUID schoolId) {
+        seedDefaultTimeslotsIfAbsent(schoolId);
+    }
 
-        Optional<CspModel> model = cspModelBuilder.build(schoolId, academicPeriodId);
-        if (model.isEmpty()) return Collections.emptyMap();
+    /**
+     * Pulls the whole problem into memory. Everything the solver needs must load here: the
+     * transaction closes on return and the solve runs against detached entities.
+     */
+    @Transactional(readOnly = true)
+    public Optional<CspModel> buildModel(UUID schoolId, UUID academicPeriodId) {
+        return cspModelBuilder.build(schoolId, academicPeriodId);
+    }
 
-        SolverResult result = new AcoTimetableSolver(model.get(), solverParameters, newRandom()).solve();
+    /**
+     * Deliberately <b>not</b> transactional — the point of the split. A run lasts up to
+     * {@code timetable.solver.time-limit-seconds} and previously held one of five connections
+     * throughout.
+     *
+     * <p>The model's entities are detached here. Safe only because the solver reads fields already
+     * materialised and never navigates a lazy association — making any {@code Event} or
+     * {@code Section} association lazy turns this into a {@code LazyInitializationException}
+     * minutes into a background job.
+     */
+    public SolveOutcome runSolver(CspModel model) {
+        SolverResult result = new AcoTimetableSolver(model, solverParameters, newRandom()).solve();
 
         if (!result.unschedulableEventIds().isEmpty()) {
             log.warn("{} event(s) could not be scheduled by any algorithm — their duration matches "
@@ -300,12 +345,11 @@ public class TimetableServiceImpl implements TimetableService {
         }
         if (!result.isFeasible()) {
             log.warn("No conflict-free timetable found within the {}s budget. Best found: {}. "
-                            + "Returning it anyway so the clashes are visible.",
+                            + "Keeping it anyway so the clashes are visible.",
                     solverParameters.getTimeLimitSeconds(), result.cost());
         }
 
-        persistAssignment(model.get(), result.bestSolution());
-        return toAssignmentMap(model.get(), result.bestSolution());
+        return new SolveOutcome(result, flattenAssignment(model, result.bestSolution()));
     }
 
     /**
@@ -318,63 +362,64 @@ public class TimetableServiceImpl implements TimetableService {
         return seed != null ? new Random(seed) : new Random();
     }
 
-    /** Translates the solver's index-based solution back into entity terms for the caller. */
-    private Map<UUID, EventAssignment> toAssignmentMap(CspModel model, Solution solution) {
-        Map<UUID, EventAssignment> assignment = new HashMap<>();
+    /**
+     * Reduces the solver's index-based solution to plain ids, in memory.
+     *
+     * <p>Only the block's <b>first</b> timeslot is kept — {@link Event} has one
+     * {@code eventTimeslot} FK, and readers recover the extent from {@code eventDuration}. Treat it
+     * as "start of block", never "the whole booking".
+     */
+    private Map<UUID, TimetableService.AssignmentIds> flattenAssignment(CspModel model, Solution solution) {
+        Map<UUID, TimetableService.AssignmentIds> assignment = new HashMap<>();
         for (int e = 0; e < model.eventCount(); e++) {
             if (!solution.isAssigned(e)) continue;
             Candidate candidate = model.candidate(e, solution.choiceOf(e));
-            assignment.put(model.event(e).getId(),
-                    new EventAssignment(candidate.block().timeslots(), candidate.room()));
+            assignment.put(model.event(e).getId(), new TimetableService.AssignmentIds(
+                    candidate.block().timeslots().get(0).getId(),
+                    candidate.room() != null ? candidate.room().getId() : null));
         }
         return assignment;
     }
 
     /**
-     * Writes the assignment back onto the Event rows.
+     * Writes the assignment back, in a short transaction of its own.
      *
-     * <p>Only the block's <b>first</b> timeslot is stored, because {@link Event} has a single
-     * {@code eventTimeslot} FK. The block's real extent is recovered by reading forward
-     * {@code eventDuration} from that start — which every reader here already does. Persisting the
-     * full block would need a schema change (an event↔timeslot join table); until then, treat
-     * {@code eventTimeslot} as "start of block", never "the whole booking".
+     * <p>It does <em>not</em> save the {@code Event} instances the solver held: those are minutes
+     * stale, and {@code saveAll} on a detached entity merges every field of that snapshot back over
+     * the row — silently reverting any edit made during the solve. Hence ids across the boundary
+     * and a fresh re-read here.
+     *
+     * @return how many events were assigned a slot
      */
-    private void persistAssignment(CspModel model, Solution solution) {
-        List<Event> toSave = new ArrayList<>();
-        for (int e = 0; e < model.eventCount(); e++) {
-            if (!solution.isAssigned(e)) continue;
-            Candidate candidate = model.candidate(e, solution.choiceOf(e));
-            Event event = model.event(e);
-            event.setEventTimeslot(candidate.block().timeslots().get(0));
-            event.setEventRoom(candidate.room());
-            toSave.add(event);
+    @Transactional
+    public int applyAssignment(UUID schoolId, UUID academicPeriodId,
+                               Map<UUID, TimetableService.AssignmentIds> assignment) {
+        if (assignment.isEmpty()) return 0;
+
+        List<Event> events = eventRepository.findAllBySchoolIdAndAcademicPeriodId(schoolId, academicPeriodId);
+        int applied = 0;
+        for (Event event : events) {
+            TimetableService.AssignmentIds ids = assignment.get(event.getId());
+            if (ids == null) continue;
+            // getReferenceById: no SELECT per timeslot and room just to set an FK.
+            event.setEventTimeslot(timeslotRepository.getReferenceById(ids.timeslotId()));
+            event.setEventRoom(ids.roomId() != null ? roomRepository.getReferenceById(ids.roomId()) : null);
+            applied++;
         }
-        eventRepository.saveAll(toSave);
+        // Managed entities: dirty checking flushes these, no save() needed.
+        return applied;
     }
 
 
     /**
-     * Runs the solver and maps the assignment to a list of {@link TimetableEntryDTO}
-     * objects, sorted by day then start time. Seeds default timeslots first if the
-     * school hasn't configured any, so the solver always has something to work with.
+     * The persisted timetable for one period, sorted by day then start time.
+     *
+     * <p>Runs after {@link #applyAssignment}, so the database is the only source of truth — no
+     * in-memory assignment to reconcile, and untouched events keep what they had.
      */
-    @Override
-    @Transactional
-    public TimetableResponse generateTimetable(GenerateTimetableRequest generateTimetableRequest) {
-        UUID schoolId = TenantContext.getSchoolId();
-
-        seedDefaultTimeslotsIfAbsent(schoolId);
-
-        // Resolve the period before solving: the solver is now scoped to it, so an invalid id must
-        // fail fast rather than after a ten-minute run.
-        AcademicPeriod academicPeriod = academicPeriodRepository
-                .findByIdAndSchoolId(parseAcademicPeriodId(generateTimetableRequest.getAcademicPeriodId()), schoolId)
-                .orElseThrow(()-> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Academic period with id, %s, does not exist".formatted(generateTimetableRequest.getAcademicPeriodId())));
-
-        // solve() also persists the chosen timeslot/room onto each Event, so the reload below picks it up.
-        Map<UUID, EventAssignment> assignment = solve(academicPeriod.getId());
-
-        List<Event> events = eventRepository.findAllBySchoolIdAndAcademicPeriodId(schoolId, academicPeriod.getId());
+    @Transactional(readOnly = true)
+    public TimetableResponse buildTimetableResponse(UUID schoolId, UUID academicPeriodId) {
+        List<Event> events = eventRepository.findAllBySchoolIdAndAcademicPeriodId(schoolId, academicPeriodId);
 
         Map<UUID, String> sectionLecturerName = new HashMap<>();
         sectionLecturerRepository.findAllBySchool_Id(schoolId).forEach(sl -> {
@@ -387,14 +432,10 @@ public class TimetableServiceImpl implements TimetableService {
 
         List<TimetableEntryDTO> entries = new ArrayList<>();
         for (Event event : events) {
-            EventAssignment a = assignment.get(event.getId());
+            if (event.getEventTimeslot() == null) continue;
 
-            // Solver skips events it didn't touch this run; fall back to what's already persisted.
-            if ((a == null || a.timeslots().isEmpty()) && event.getEventTimeslot() != null) {
-                a = new EventAssignment(List.of(event.getEventTimeslot()), event.getEventRoom());
-            }
-
-            if (a == null || a.timeslots().isEmpty()) continue;
+            // Single-slot block: endTimeOf recovers the real extent from the duration.
+            EventAssignment a = new EventAssignment(List.of(event.getEventTimeslot()), event.getEventRoom());
 
             TimetableEntryDTO dto = new TimetableEntryDTO();
             dto.setEventId(event.getId());
@@ -438,12 +479,50 @@ public class TimetableServiceImpl implements TimetableService {
     }
 
     /**
-     * When an event's block ends.
+     * The conflict graph as a webhook payload rather than a Graphviz string. Same builder as the
+     * solver and the DOT export, so all three agree; only the shape differs.
      *
-     * <p>Prefers the block's own last slot. Falls back to reading {@code eventDuration} forward
-     * from the start, which is what the fallback path above needs: it reconstructs a
-     * <em>single-slot</em> block from the persisted {@code eventTimeslot} (the only slot the schema
-     * stores), so trusting its last slot would report a 2-hour class as 1 hour.
+     * <p>Capped at {@code webhook.max-conflict-map-sections}, with an explicit {@code truncated}
+     * flag rather than a silent cut.
+     */
+    @Transactional(readOnly = true)
+    public ConflictMapPayload buildConflictMapPayload(UUID schoolId, UUID academicPeriodId, int maxSections) {
+        List<Section> sections = sectionRepository
+                .findSectionByFilter(schoolId, null, null, null, academicPeriodId, null);
+
+        boolean truncated = sections.size() > maxSections;
+        if (truncated) {
+            sections = sections.subList(0, maxSections);
+        }
+
+        ConflictGraphBuilder.ConflictGraphResult result = conflictGraphBuilder.build(sections);
+        Graph<UUID, DefaultEdge> graph = result.graph();
+        Map<UUID, Section> sectionById = result.sectionById();
+
+        List<ConflictMapPayload.ConflictEdge> conflicts = new ArrayList<>();
+        for (DefaultEdge edge : graph.edgeSet()) {
+            UUID source = graph.getEdgeSource(edge);
+            UUID target = graph.getEdgeTarget(edge);
+            TimetableEnum.TimetableConflictReason reason =
+                    result.conflictMap().get(UtilityServiceImpl.generateConflictKey(source, target));
+            conflicts.add(new ConflictMapPayload.ConflictEdge(
+                    source, sectionNameOf(sectionById, source),
+                    target, sectionNameOf(sectionById, target),
+                    reason != null ? reason.name() : null));
+        }
+
+        return new ConflictMapPayload(academicPeriodId, graph.vertexSet().size(),
+                conflicts.size(), truncated, conflicts);
+    }
+
+    private static String sectionNameOf(Map<UUID, Section> sectionById, UUID id) {
+        Section section = sectionById.get(id);
+        return section != null ? section.getSectionName() : null;
+    }
+
+    /**
+     * When an event's block ends. Prefers the block's last slot, falling back to {@code eventDuration}
+     * from the start — a block rebuilt from the single persisted slot would report a 2-hour class as 1.
      */
     private static String endTimeOf(Event event, EventAssignment assignment) {
         List<Timeslot> timeslots = assignment.timeslots();
@@ -460,10 +539,7 @@ public class TimetableServiceImpl implements TimetableService {
         return first.getTimeslotEndTime() != null ? first.getTimeslotEndTime().toString() : null;
     }
 
-    /**
-     * Seeds Mon–Fri, 1-hour slots across the school's configured day-start/day-end
-     * hours, but only if the school hasn't defined any timeslots yet.
-     */
+    /** Seeds Mon–Fri 1-hour slots across the school's day, only if it has none. */
     private void seedDefaultTimeslotsIfAbsent(UUID schoolId) {
         if (timeslotRepository.countBySchool_Id(schoolId) > 0) return;
 
@@ -497,10 +573,7 @@ public class TimetableServiceImpl implements TimetableService {
         return ts;
     }
 
-    /**
-     * Reads already-persisted solver results from the DB and produces a
-     * landscape A4 PDF table grouped by day of the week.
-     */
+    /** Landscape A4 PDF of the persisted timetable, grouped by day. */
     @Override
     @Transactional(readOnly = true)
     public byte[] downloadTimetablePdf(DownloadTimetableRequest downloadTimetableRequest) {
@@ -610,7 +683,7 @@ public class TimetableServiceImpl implements TimetableService {
     private static String nullSafe(String s) { return s != null ? s : "-"; }
     private static String trim(String s)     { return s != null ? s : ""; }
 
-    // Day abbreviation → full enum name, used when parsing timeslot strings like "M(13:00-15:00)".
+    // Day abbreviation → enum name, for strings like "M(13:00-15:00)".
     private static final Map<String, String> DAY_MAP = new LinkedHashMap<>();
     static {
         DAY_MAP.put("SUN", "SUNDAY");
@@ -627,10 +700,7 @@ public class TimetableServiceImpl implements TimetableService {
         DAY_MAP.put("F",   "FRIDAY");
     }
 
-    /**
-     * Parses an entry like {@code M(13:00-15:00)} or {@code TH(14:00-17:00)} into
-     * a persisted {@link Timeslot}, reusing existing ones from the cache.
-     */
+    /** Parses {@code M(13:00-15:00)} into a persisted {@link Timeslot}, reusing the cache. */
     private Timeslot parseAndUpsertTimeslot(String entry, Map<String, Timeslot> cache, School school) {
         int parenOpen  = entry.indexOf('(');
         int dash       = entry.indexOf('-', parenOpen);
@@ -670,9 +740,8 @@ public class TimetableServiceImpl implements TimetableService {
 
 
     /**
-     * Generates a Graphviz DOT representation of the conflict graph.
-     * Red edges = same lecturer; orange edges = overlapping students.
-     * Paste the result at <a href="https://dreampuf.github.io/GraphvizOnline/">...</a>
+     * Graphviz DOT of the conflict graph — red = same lecturer, orange = overlapping students.
+     * Paste at <a href="https://dreampuf.github.io/GraphvizOnline/">GraphvizOnline</a>.
      */
     @Override
     public String getConflictGraphDot(DownloadConflictGraphRequest downloadConflictGraphRequest) {
@@ -683,7 +752,7 @@ public class TimetableServiceImpl implements TimetableService {
         List<Section> sections = sectionRepository
                 .findSectionByFilter(schoolId, null, null,null, academicPeriod.getId(), null);
 
-        // Same builder the solver uses, so the picture always matches what was actually solved.
+        // Same builder the solver uses, so the picture matches what was solved.
         ConflictGraphBuilder.ConflictGraphResult result = conflictGraphBuilder.build(sections);
         Graph<UUID, DefaultEdge> graph = result.graph();
         Map<String, TimetableEnum.TimetableConflictReason> conflictMap = result.conflictMap();

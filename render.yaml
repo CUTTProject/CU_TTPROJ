@@ -85,18 +85,29 @@ services:
 
       # ── Solver budget — the important one ─────────────────────────────────
       # Locally this is 600 seconds. That cannot work behind a load balancer:
-      # POST /timetable/generate would block for ten minutes and Render's router
-      # would terminate the request long before the solver returned, leaving it
-      # burning CPU on a connection nobody is listening to.
+      # This was capped at 45s because POST /timetable/generate used to block for
+      # the whole solve, and Render's router would terminate the request long
+      # before it returned, leaving it burning CPU on a connection nobody was
+      # listening to.
       #
-      # 45s keeps the request inside every proxy timeout. The trade-off is real
-      # and worth stating out loud: the budget is WALL-CLOCK, so fewer seconds
-      # means fewer ant iterations and measurably worse timetables. Worse still
-      # on the free plan's 0.1 shared CPU — 45 wall-clock seconds buys roughly
-      # 4.5 CPU-seconds of ants against 600 locally. Benchmark locally at 600s;
-      # treat this instance as a functional demo, not evidence.
+      # That reason is now gone: generation is asynchronous, the request returns a
+      # job id in milliseconds, and the solver runs on a background thread with no
+      # connection waiting on it. The router timeout no longer bounds the budget.
+      #
+      # It is raised to 300s rather than the local 600s because the other free-plan
+      # constraints are unchanged: 0.1 shared CPU means 300 wall-clock seconds buys
+      # only ~30 CPU-seconds of ants, and the instance spins down after ~15 minutes
+      # of inactivity, which would kill a long solve that no request is keeping
+      # alive. Benchmark locally at 600s; treat this instance as a functional demo.
       - key: TIMETABLE_SOLVER_TIME_LIMIT_SECONDS
-        value: "45"
+        value: "300"
+
+      # SSRF guard for school-supplied webhook urls. MUST stay false here — with it
+      # on, a school could point the webhook at anything reachable from inside
+      # Render's network, including the instance metadata endpoint. It exists only
+      # so a developer can deliver to a receiver on localhost.
+      - key: WEBHOOK_ALLOW_PRIVATE_HOSTS
+        value: "false"
 
       # Verbose per-iteration logging is noise in a hosted log stream.
       - key: TIMETABLE_SOLVER_VERBOSE

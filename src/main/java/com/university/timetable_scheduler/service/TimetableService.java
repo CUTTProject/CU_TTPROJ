@@ -3,17 +3,12 @@ package com.university.timetable_scheduler.service;
 import com.university.timetable_scheduler.dto.request.timetable.BulkUploadTimetableArrayRequest;
 import com.university.timetable_scheduler.dto.request.timetable.DownloadConflictGraphRequest;
 import com.university.timetable_scheduler.dto.request.timetable.DownloadTimetableRequest;
-import com.university.timetable_scheduler.dto.request.timetable.GenerateTimetableRequest;
 import com.university.timetable_scheduler.dto.response.timetable.BulkUploadTimetableResponse;
-import com.university.timetable_scheduler.dto.response.timetable.TimetableResponse;
 import com.university.timetable_scheduler.entity.Room;
 import com.university.timetable_scheduler.entity.Timeslot;
-import jakarta.validation.Valid;
-import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 
 public interface TimetableService {
@@ -24,20 +19,15 @@ public interface TimetableService {
     record EventAssignment(List<Timeslot> timeslots, Room room) {}
 
     /**
-     * Run the ACO + min-conflicts solver over one academic period, persist the results, and return
-     * the final assignment map (eventId → EventAssignment).
+     * An assignment reduced to ids — what crosses the transaction boundary.
      *
-     * <p>The period is a required argument rather than an ambient default: the previous signature
-     * took none and the implementation loaded every event in the school, so scheduling one period
-     * silently rescheduled all the others.
+     * <p>The solver runs untransacted, so its entities are detached by write-back time. Passing them
+     * to {@code saveAll} would merge a stale snapshot over the row and revert anything edited
+     * meanwhile, so only ids cross and the rows are re-read fresh.
+     *
+     * <p>{@code timeslotId} is the <em>first</em> slot of the block.
      */
-    Map<UUID, EventAssignment> solve(UUID academicPeriodId);
-
-    /**
-     * Generate the timetable by running the solver and returning a structured
-     * list of scheduled entries (JSON representation).
-     */
-    TimetableResponse generateTimetable(GenerateTimetableRequest generateTimetableRequest);
+    record AssignmentIds(UUID timeslotId, UUID roomId) {}
 
     /**
      * Generate and return the timetable as a PDF byte array.

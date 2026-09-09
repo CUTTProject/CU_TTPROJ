@@ -17,22 +17,14 @@ import java.util.Map;
 import java.util.UUID;
 
 /**
- * Builds the section-level conflict graph — spec §2.
+ * The section-level conflict graph (spec §2). An edge means "may not share a timeslot", because of
+ * {@code SAME_LECTURER} or {@code OVERLAPPING_STUDENTS}.
  *
- * <p>An edge means "these two may not share a timeslot", for one of the spec's reasons:
- * <ul>
- *   <li>{@code SAME_LECTURER} — one person cannot teach two things at once</li>
- *   <li>{@code OVERLAPPING_STUDENTS} — a student cannot attend two things at once</li>
- * </ul>
+ * <p><b>Vertices are sections, not courses.</b> The spec says one vertex per course but then
+ * describes edges between events. Sections are the right reading: a course's sections exist so
+ * different student groups can take it, and forcing them apart in time would be wrong.
  *
- * <p><b>Vertices are sections, not courses.</b> The spec says "Vertices V = C (one per course)" but
- * then describes edges between events, so it contradicts itself. Sections are the correct reading:
- * a course's two sections exist precisely so different student groups can take it, and forcing them
- * apart in time would be wrong. The graph is expanded from sections down to events by
- * {@link CspModelBuilder}, since events are the CSP variables.
- *
- * <p>Extracted here so the solver and the Graphviz endpoint build the graph the same way rather
- * than each keeping their own copy.
+ * <p>Shared so the solver and the Graphviz endpoint build the same graph.
  */
 @Component
 @AllArgsConstructor

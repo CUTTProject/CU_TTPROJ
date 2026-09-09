@@ -9,24 +9,17 @@ import java.util.Map;
 import java.util.UUID;
 
 /**
- * The immutable CSP instance the solver reasons about — the triple {@code (X, D, Constraints)}
- * from the spec, flattened into index-addressed arrays.
+ * The immutable CSP instance — the spec's {@code (X, D, Constraints)} flattened into index-addressed
+ * arrays. Events are {@code 0..eventCount-1} and domain values {@code 0..domainOf(e).size()-1}, so a
+ * timetable is an {@code int[]} and the pheromone table a {@code double[][]}. That density is what
+ * makes hundreds of thousands of ant constructions affordable.
  *
- * <p><b>Everything here is dense-indexed.</b> Events are {@code 0..eventCount-1}, and an event's
- * domain values are {@code 0..domainOf(e).size()-1}. A whole timetable is therefore just an
- * {@code int[]} (see {@link Solution}), and the pheromone table is a {@code double[][]} — which is
- * what makes hundreds of thousands of ant constructions affordable inside the time budget.
+ * <p>Variables are events; domains are {@link #domainOf(int)}, precomputed once; the binary
+ * colouring constraint is {@link #neighboursOf(int)}. Room exclusivity is not stored — it holds for
+ * every pair of events and is enforced by {@link ConflictCounter}'s occupancy index.
  *
- * <p>Mapping back to the spec:
- * <ul>
- *   <li><b>Variables (X)</b> — one per event; the index {@code 0..eventCount-1}.</li>
- *   <li><b>Domains (D)</b> — {@link #domainOf(int)}, precomputed once as the spec requires
- *       ("Di must be precomputed for each ei to reduce the search space").</li>
- *   <li><b>Binary colouring constraint</b> — {@link #neighboursOf(int)}, the conflict graph
- *       expanded from sections down to individual events.</li>
- *   <li><b>Room exclusivity</b> — not stored here; it is implied for <em>every</em> pair of events
- *       and is enforced by {@link ConflictCounter} via the room occupancy index.</li>
- * </ul>
+ * <p>Holds JPA entities that are detached once the solve begins, so nothing here may navigate a
+ * lazy association.
  */
 public final class CspModel {
 
