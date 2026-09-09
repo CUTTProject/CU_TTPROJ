@@ -65,6 +65,18 @@ Render injects the Postgres host, port, database, user and password automaticall
 the JDBC URL from those parts, which is why `application.properties` supports `DB_HOST`/`DB_PORT`/
 `DB_NAME` as well as a whole `DB_URL`.
 
+Deploy it as a **Blueprint**, not as a hand-created Web Service: Render only reads `render.yaml` for
+the former, so a service created by hand starts with none of those variables set. There is no
+`localhost` fallback for the database — the app refuses to start and names the variables it is
+missing, rather than dialling a database that is not there and failing several seconds later with
+Hibernate's `Unable to determine Dialect without JDBC metadata`, which names nothing useful.
+
+To point the deployment at an external Postgres (Neon, Supabase) instead, set `DB_URL` — a JDBC URL,
+so rewrite Render's or the provider's `postgresql://user:pass@host/db` form as
+`jdbc:postgresql://host:5432/db` with the credentials in `DB_USERNAME`/`DB_PASSWORD`. Add
+`?sslmode=require` for any host reached over the public internet; Render's *internal* host does not
+need it.
+
 ### What is different about the hosted instance
 
 | | Local | Render free tier |
