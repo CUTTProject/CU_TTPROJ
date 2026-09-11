@@ -9,6 +9,7 @@ import com.university.timetable_scheduler.mapper.RoomMapper;
 import com.university.timetable_scheduler.repository.RoomRepository;
 import com.university.timetable_scheduler.repository.SchoolRepository;
 import com.university.timetable_scheduler.service.RoomService;
+import com.university.timetable_scheduler.status.ActivityEnum;
 import com.university.timetable_scheduler.status.RoomEnum;
 import com.university.timetable_scheduler.tenant.TenantContext;
 import jakarta.transaction.Transactional;
@@ -33,6 +34,7 @@ public class RoomServiceImpl implements RoomService {
     private final RoomRepository roomRepository;
     private final RoomMapper roomMapper;
     private final SchoolRepository schoolRepository;
+    private final ActivityServiceImpl activityService;
 
     private School currentSchool() {
         return schoolRepository.findLiveById(TenantContext.getSchoolId())
@@ -48,6 +50,8 @@ public class RoomServiceImpl implements RoomService {
         entity.setRoomCapacity(request.getRoomCapacity());
         entity.setRoomType(request.getRoomType());
         Room saved = roomRepository.save(entity);
+        activityService.record(ActivityEnum.ActivityType.ROOM_CREATED, "New room added",
+                ActivityServiceImpl.label(saved.getRoomBuilding(), saved.getRoomNumber()) + " was added");
         CreateRoomResponse response = new CreateRoomResponse();
         CreateRoomResponse.Data responseData = new CreateRoomResponse.Data();
         responseData.setRoom(roomMapper.toResponse(saved));
@@ -101,7 +105,7 @@ public class RoomServiceImpl implements RoomService {
                             .build()
                             .parse();
 
-            processRoomRows(rows.stream().map(r -> {
+            int imported = processRoomRows(rows.stream().map(r -> {
                 BulkUploadRoomArrayRequest.Row row = new BulkUploadRoomArrayRequest.Row();
                 row.setRoomBuilding(r.getRoomBuilding());
                 row.setRoomNumber(r.getRoomNumber());
@@ -109,6 +113,8 @@ public class RoomServiceImpl implements RoomService {
                 row.setRoomType(r.getRoomType());
                 return row;
             }).toList(), currentSchool());
+            activityService.record(ActivityEnum.ActivityType.ROOMS_UPLOADED, "Room data uploaded successfully",
+                    ActivityServiceImpl.imported(imported, "room"));
 
             BulkUploadRoomResponse response = new BulkUploadRoomResponse();
             response.setError(false);
@@ -126,7 +132,9 @@ public class RoomServiceImpl implements RoomService {
     @Override
     @Transactional
     public BulkUploadRoomResponse bulkUploadRoomsArray(BulkUploadRoomArrayRequest request) {
-        processRoomRows(request.getRooms(), currentSchool());
+        int imported = processRoomRows(request.getRooms(), currentSchool());
+        activityService.record(ActivityEnum.ActivityType.ROOMS_UPLOADED, "Room data uploaded successfully",
+                ActivityServiceImpl.imported(imported, "room"));
 
         BulkUploadRoomResponse response = new BulkUploadRoomResponse();
         response.setError(false);
@@ -135,7 +143,8 @@ public class RoomServiceImpl implements RoomService {
         return response;
     }
 
-    private void processRoomRows(List<BulkUploadRoomArrayRequest.Row> rows, School school) {
+    /** Returns how many distinct rooms were created or updated. */
+    private int processRoomRows(List<BulkUploadRoomArrayRequest.Row> rows, School school) {
         UUID schoolId = school.getId();
         Map<String, Room> cache = new HashMap<>();
         roomRepository.findAllBySchool_Id(schoolId)
@@ -164,5 +173,7 @@ public class RoomServiceImpl implements RoomService {
         }
 
         roomRepository.saveAll(toSave);
+        // A room repeated in the upload is the same object twice; Room has identity equality.
+        return (int) toSave.stream().distinct().count();
     }
 }

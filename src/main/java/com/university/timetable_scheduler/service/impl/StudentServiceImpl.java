@@ -10,6 +10,7 @@ import com.university.timetable_scheduler.repository.DepartmentRepository;
 import com.university.timetable_scheduler.repository.SchoolRepository;
 import com.university.timetable_scheduler.repository.StudentRepository;
 import com.university.timetable_scheduler.service.StudentService;
+import com.university.timetable_scheduler.status.ActivityEnum;
 import com.university.timetable_scheduler.tenant.TenantContext;
 import jakarta.transaction.Transactional;
 import lombok.AllArgsConstructor;
@@ -26,6 +27,7 @@ public class StudentServiceImpl implements StudentService {
     private final DepartmentRepository departmentRepository;
     private final StudentMapper studentMapper;
     private final SchoolRepository schoolRepository;
+    private final ActivityServiceImpl activityService;
 
     private School currentSchool() {
         return schoolRepository.findLiveById(TenantContext.getSchoolId())
@@ -45,6 +47,8 @@ public class StudentServiceImpl implements StudentService {
         entity.setStudentLevel(request.getStudentLevel());
         entity.setStudentDepartment(department);
         Student saved = studentRepository.save(entity);
+        activityService.record(ActivityEnum.ActivityType.STUDENT_CREATED, "New student added",
+                ActivityServiceImpl.label(saved.getStudentFirstName(), saved.getStudentLastName()) + " was added");
         CreateStudentResponse response = new CreateStudentResponse();
         CreateStudentResponse.Data responseData = new CreateStudentResponse.Data();
         responseData.setStudent(studentMapper.toResponse(saved));

@@ -8,6 +8,7 @@ import com.university.timetable_scheduler.mapper.CourseMapper;
 import com.university.timetable_scheduler.repository.CourseRepository;
 import com.university.timetable_scheduler.repository.SchoolRepository;
 import com.university.timetable_scheduler.service.CourseService;
+import com.university.timetable_scheduler.status.ActivityEnum;
 import com.university.timetable_scheduler.status.CourseEnum;
 import com.university.timetable_scheduler.tenant.TenantContext;
 import jakarta.transaction.Transactional;
@@ -24,6 +25,7 @@ public class CourseServiceImpl implements CourseService {
     private final CourseRepository courseRepository;
     private final CourseMapper courseMapper;
     private final SchoolRepository schoolRepository;
+    private final ActivityServiceImpl activityService;
 
     private School currentSchool() {
         return schoolRepository.findLiveById(TenantContext.getSchoolId())
@@ -41,6 +43,8 @@ public class CourseServiceImpl implements CourseService {
         newCourse.setCourseUnit(createCourseRequest.getCourseUnit());
         newCourse.setCourseStatus(CourseEnum.CourseStatus.ACTIVE);
         Course course = courseRepository.save(newCourse);
+        activityService.record(ActivityEnum.ActivityType.COURSE_CREATED, "New course added",
+                ActivityServiceImpl.label(course.getCourseCode(), course.getCourseName()) + " was added");
         CreateCourseResponse response = new CreateCourseResponse();
         CreateCourseResponse.Data responseData = new CreateCourseResponse.Data();
         responseData.setCourse(courseMapper.toResponse(course));

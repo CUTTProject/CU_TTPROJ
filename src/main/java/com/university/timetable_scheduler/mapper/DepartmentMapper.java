@@ -9,6 +9,7 @@ import java.util.List;
 
 @Mapper(componentModel = "spring", unmappedTargetPolicy = ReportingPolicy.ERROR)
 public interface DepartmentMapper {
+    @Mapping(source = "departmentHead.id", target = "departmentHeadId")
     DepartmentResponse toResponse(Department department);
     List<DepartmentResponse> toResponseList(List<Department> departments);
 

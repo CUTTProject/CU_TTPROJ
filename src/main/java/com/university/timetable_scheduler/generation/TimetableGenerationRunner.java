@@ -2,10 +2,12 @@ package com.university.timetable_scheduler.generation;
 
 import com.university.timetable_scheduler.dto.response.timetable.TimetableResponse;
 import com.university.timetable_scheduler.entity.AcademicPeriod;
+import com.university.timetable_scheduler.service.impl.ActivityServiceImpl;
 import com.university.timetable_scheduler.service.impl.TimetableServiceImpl;
 import com.university.timetable_scheduler.solver.CspModel;
 import com.university.timetable_scheduler.solver.SolverParameters;
 import com.university.timetable_scheduler.solver.SolverResult;
+import com.university.timetable_scheduler.status.ActivityEnum;
 import com.university.timetable_scheduler.status.WebhookEnum;
 import com.university.timetable_scheduler.tenant.TenantContext;
 import com.university.timetable_scheduler.webhook.WebhookProperties;
@@ -52,6 +54,7 @@ public class TimetableGenerationRunner {
     private final SolverParameters solverParameters;
     private final Clock clock;
     private final ThreadPoolTaskExecutor solverExecutor;
+    private final ActivityServiceImpl activityService;
 
     // Explicit because Lombok does not copy @Qualifier onto constructor parameters, and there
     // are two ThreadPoolTaskExecutor beans.'
@@ -61,7 +64,8 @@ public class TimetableGenerationRunner {
                                      WebhookProperties webhookProperties,
                                      SolverParameters solverParameters,
                                      Clock clock,
-                                     @Qualifier(AsyncConfig.SOLVER_EXECUTOR) ThreadPoolTaskExecutor solverExecutor) {
+                                     @Qualifier(AsyncConfig.SOLVER_EXECUTOR) ThreadPoolTaskExecutor solverExecutor,
+                                     ActivityServiceImpl activityService) {
         this.timetableService = timetableService;
         this.registry = registry;
         this.webhookService = webhookService;
@@ -69,6 +73,7 @@ public class TimetableGenerationRunner {
         this.solverParameters = solverParameters;
         this.clock = clock;
         this.solverExecutor = solverExecutor;
+        this.activityService = activityService;
     }
 
     /**
@@ -121,6 +126,8 @@ public class TimetableGenerationRunner {
                 log.warn("Nothing to solve for academic period {}", job.getAcademicPeriodId());
                 job.markFailed(Instant.now(clock),
                         "No events, rooms or timeslots were found for this academic period.");
+                recordActivity(ActivityEnum.ActivityType.TIMETABLE_GENERATION_FAILED, "Timetable generation failed",
+                        "No events, rooms or timeslots were found for this academic period.");
                 webhookService.publish(target, WebhookEnum.WebhookEventType.GENERATION_FAILED,
                         new GenerationFailedPayload(job.getJobId(), job.getAcademicPeriodId(),
                                 GenerationFailedPayload.NO_MODEL,
@@ -143,12 +150,18 @@ public class TimetableGenerationRunner {
             job.setFeasible(result.isFeasible());
             job.setStopReason(result.stoppedBecause().name());
             job.markSucceeded(Instant.now(clock));
+            recordActivity(ActivityEnum.ActivityType.TIMETABLE_GENERATED, "Timetable generated",
+                    "%d of %d events were scheduled%s".formatted(
+                            timetable.getScheduledEvents(), timetable.getTotalEvents(),
+                            result.isFeasible() ? "" : ", with conflicts"));
 
             publishResults(job, target, result, timetable);
 
         } catch (Exception e) {
             log.error("Generation job {} failed for school {}", job.getJobId(), job.getSchoolId(), e);
             job.markFailed(Instant.now(clock), "The generation failed unexpectedly.");
+            recordActivity(ActivityEnum.ActivityType.TIMETABLE_GENERATION_FAILED, "Timetable generation failed",
+                    "The generation failed unexpectedly.");
             // Generic on purpose: the exception is in the server log, and the receiver is outside
             // the trust boundary.
             webhookService.publish(target, WebhookEnum.WebhookEventType.GENERATION_FAILED,
@@ -157,6 +170,15 @@ public class TimetableGenerationRunner {
         } finally {
             registry.release(job.getSchoolId(), job.getAcademicPeriodId());
             MDC.clear();
+        }
+    }
+
+    /** The feed is a nicety: failing to write it must not fail the job, or escape the catch-all. */
+    private void recordActivity(ActivityEnum.ActivityType type, String title, String description) {
+        try {
+            activityService.record(type, title, description);
+        } catch (Exception e) {
+            log.warn("Could not record {} activity", type, e);
         }
     }
 

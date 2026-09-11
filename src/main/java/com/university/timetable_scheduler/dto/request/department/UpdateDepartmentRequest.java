@@ -15,4 +15,8 @@ public class UpdateDepartmentRequest {
     private UUID id;
 
     private String departmentName;
+
+    private String departmentCode;
+
+    private UUID departmentHeadId;
 }

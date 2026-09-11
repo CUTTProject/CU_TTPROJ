@@ -16,6 +16,12 @@ public class Department extends TenantAwareEntity {
 
     private String departmentName;
 
+    private String departmentCode;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "departmentHeadId")
+    private Lecturer departmentHead;
+
     @Enumerated(EnumType.STRING)
     private DepartmentEnum.DepartmentStatus departmentStatus;
 

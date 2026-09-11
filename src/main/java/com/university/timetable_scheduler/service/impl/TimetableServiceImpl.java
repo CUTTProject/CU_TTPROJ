@@ -68,6 +68,7 @@ public class TimetableServiceImpl implements TimetableService {
     private SectionRoomRepository sectionRoomRepository;
 
     private WebhookService webhookService;
+    private ActivityServiceImpl activityService;
 
     private CspModelBuilder cspModelBuilder;
     private ConflictGraphBuilder conflictGraphBuilder;
@@ -286,6 +287,9 @@ public class TimetableServiceImpl implements TimetableService {
 
         eventRepository.saveAll(eventsToSave);
 
+        activityService.record(ActivityEnum.ActivityType.TIMETABLE_UPLOADED, "Timetable data uploaded",
+                ActivityServiceImpl.imported(rows.size(), "row")
+                        + (period.getAcademicPeriodName() != null ? " for " + period.getAcademicPeriodName() : ""));
     }
 
 

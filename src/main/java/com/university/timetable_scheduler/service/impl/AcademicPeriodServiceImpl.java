@@ -8,6 +8,7 @@ import com.university.timetable_scheduler.mapper.AcademicPeriodMapper;
 import com.university.timetable_scheduler.repository.AcademicPeriodRepository;
 import com.university.timetable_scheduler.repository.SchoolRepository;
 import com.university.timetable_scheduler.service.AcademicPeriodService;
+import com.university.timetable_scheduler.status.ActivityEnum;
 import com.university.timetable_scheduler.tenant.TenantContext;
 import jakarta.transaction.Transactional;
 import lombok.AllArgsConstructor;
@@ -23,6 +24,7 @@ public class AcademicPeriodServiceImpl implements AcademicPeriodService {
     private final AcademicPeriodRepository academicPeriodRepository;
     private final AcademicPeriodMapper academicPeriodMapper;
     private final SchoolRepository schoolRepository;
+    private final ActivityServiceImpl activityService;
 
     private School currentSchool() {
         return schoolRepository.findLiveById(TenantContext.getSchoolId())
@@ -39,6 +41,8 @@ public class AcademicPeriodServiceImpl implements AcademicPeriodService {
         entity.setAcademicPeriodStartDate(request.getAcademicPeriodStartDate());
         entity.setAcademicPeriodEndDate(request.getAcademicPeriodEndDate());
         AcademicPeriod saved = academicPeriodRepository.save(entity);
+        activityService.record(ActivityEnum.ActivityType.ACADEMIC_PERIOD_CREATED, "New academic period created",
+                ActivityServiceImpl.label(saved.getAcademicPeriodName()) + " was created");
         CreateAcademicPeriodResponse response = new CreateAcademicPeriodResponse();
         CreateAcademicPeriodResponse.Data responseData = new CreateAcademicPeriodResponse.Data();
         responseData.setAcademicPeriod(academicPeriodMapper.toResponse(saved));

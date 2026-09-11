@@ -11,6 +11,7 @@ import com.university.timetable_scheduler.entity.Student;
 import com.university.timetable_scheduler.mapper.EnrollmentMapper;
 import com.university.timetable_scheduler.repository.*;
 import com.university.timetable_scheduler.service.EnrollmentService;
+import com.university.timetable_scheduler.status.ActivityEnum;
 import com.university.timetable_scheduler.status.StudentEnum;
 import com.university.timetable_scheduler.tenant.TenantContext;
 import jakarta.transaction.Transactional;
@@ -36,6 +37,7 @@ public class EnrollmentServiceImpl implements EnrollmentService {
     private final DepartmentRepository departmentRepository;
     private final EnrollmentMapper enrollmentMapper;
     private final SchoolRepository schoolRepository;
+    private final ActivityServiceImpl activityService;
 
     private School currentSchool() {
         return schoolRepository.findLiveById(TenantContext.getSchoolId())
@@ -112,10 +114,11 @@ public class EnrollmentServiceImpl implements EnrollmentService {
         UUID schoolId = school.getId();
         List<EnrollmentResponse> created = new ArrayList<>();
         List<String> skippedReasons = new ArrayList<>();
+        int[] newStudents = {0};
 
         for (BulkEnrollmentRequest.Row row : request.getRows()) {
             // Resolve department scoped to school
-            List<Department> departments = departmentRepository.findDepartmentByFilter(schoolId, null, row.getStudentDepartment(), null);
+            List<Department> departments = departmentRepository.findDepartmentByFilter(schoolId, null, row.getStudentDepartment(), null, null);
             if (departments.isEmpty()) {
                 skippedReasons.add("Row [" + row.getStudentMatriculationNumber() + " → " + row.getCourseSection() + "]: Department '" + row.getStudentDepartment() + "' not found");
                 continue;
@@ -142,6 +145,7 @@ public class EnrollmentServiceImpl implements EnrollmentService {
                         s.setStudentEmail(row.getStudentEmail());
                         s.setStudentLevel(row.getStudentLevel());
                         s.setStudentDepartment(department);
+                        newStudents[0]++;
                         return studentRepository.save(s);
                     });
 
@@ -158,6 +162,11 @@ public class EnrollmentServiceImpl implements EnrollmentService {
             Enrollment saved = enrollmentRepository.save(enrollment);
             created.add(enrollmentMapper.toResponse(saved));
         }
+
+        String summary = "%d new student(s) and %d enrollment(s) were imported"
+                .formatted(newStudents[0], created.size());
+        if (!skippedReasons.isEmpty()) summary += ", " + skippedReasons.size() + " row(s) skipped";
+        activityService.record(ActivityEnum.ActivityType.STUDENTS_IMPORTED, "Student data imported", summary);
 
         BulkEnrollmentResponse response = new BulkEnrollmentResponse();
         BulkEnrollmentResponse.Data data = new BulkEnrollmentResponse.Data();

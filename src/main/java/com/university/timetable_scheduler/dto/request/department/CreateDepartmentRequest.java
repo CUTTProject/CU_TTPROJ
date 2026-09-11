@@ -6,6 +6,8 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.util.UUID;
+
 @AllArgsConstructor
 @NoArgsConstructor
 @Getter
@@ -13,4 +15,9 @@ import lombok.Setter;
 public class CreateDepartmentRequest {
     @NotBlank(message = "Department name is required")
     private String departmentName;
+
+    @NotBlank(message = "Department code is required")
+    private String departmentCode;
+
+    private UUID departmentHeadId;
 }

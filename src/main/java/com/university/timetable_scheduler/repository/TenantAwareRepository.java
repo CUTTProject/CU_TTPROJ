@@ -43,4 +43,12 @@ public interface TenantAwareRepository<T extends TenantAwareEntity> extends JpaR
           AND (e.isDeleted IS NULL OR e.isDeleted = false)
     """)
     List<T> findAllBySchool_Id(@Param("schoolId") UUID schoolId);
+
+    /** Number of live rows belonging to one school, without loading them. */
+    @Query("""
+        SELECT COUNT(e) FROM #{#entityName} e
+        WHERE e.school.id = :schoolId
+          AND (e.isDeleted IS NULL OR e.isDeleted = false)
+    """)
+    long countLiveBySchoolId(@Param("schoolId") UUID schoolId);
 }

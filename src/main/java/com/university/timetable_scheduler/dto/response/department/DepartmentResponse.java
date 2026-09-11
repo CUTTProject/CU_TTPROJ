@@ -12,6 +12,8 @@ import lombok.Setter;
 public class DepartmentResponse {
     private UUID id;
     private String departmentName;
+    private String departmentCode;
+    private UUID departmentHeadId;
     private DepartmentEnum.DepartmentStatus departmentStatus;
 }
 

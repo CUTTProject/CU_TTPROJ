@@ -10,6 +10,7 @@ import com.university.timetable_scheduler.repository.DepartmentRepository;
 import com.university.timetable_scheduler.repository.LecturerRepository;
 import com.university.timetable_scheduler.repository.SchoolRepository;
 import com.university.timetable_scheduler.service.LecturerService;
+import com.university.timetable_scheduler.status.ActivityEnum;
 import com.university.timetable_scheduler.tenant.TenantContext;
 import jakarta.transaction.Transactional;
 import lombok.AllArgsConstructor;
@@ -26,6 +27,7 @@ public class LecturerServiceImpl implements LecturerService {
     private final DepartmentRepository departmentRepository;
     private final LecturerMapper lecturerMapper;
     private final SchoolRepository schoolRepository;
+    private final ActivityServiceImpl activityService;
 
     private School currentSchool() {
         return schoolRepository.findLiveById(TenantContext.getSchoolId())
@@ -44,6 +46,8 @@ public class LecturerServiceImpl implements LecturerService {
         entity.setLecturerEmail(request.getLecturerEmail());
         entity.setLecturerDepartment(department);
         Lecturer saved = lecturerRepository.save(entity);
+        activityService.record(ActivityEnum.ActivityType.LECTURER_CREATED, "New lecturer added",
+                ActivityServiceImpl.label(saved.getLecturerFirstName(), saved.getLecturerLastName()) + " was added");
         CreateLecturerResponse response = new CreateLecturerResponse();
         CreateLecturerResponse.Data responseData = new CreateLecturerResponse.Data();
         responseData.setLecturer(lecturerMapper.toResponse(saved));

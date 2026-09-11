@@ -15,6 +15,7 @@ import java.util.UUID;
 public class ReadDepartmentRequest {
     private UUID id;
     private String departmentName;
+    private String departmentCode;
     private DepartmentEnum.DepartmentStatus departmentStatus;
 }
 
