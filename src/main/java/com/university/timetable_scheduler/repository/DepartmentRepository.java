@@ -18,7 +18,7 @@ public interface DepartmentRepository extends TenantAwareRepository<Department> 
           AND (d.isDeleted IS NULL OR d.isDeleted = false)
           AND (:id IS NULL OR d.id = :id)
           AND (:departmentName IS NULL OR d.departmentName = :departmentName)
-          AND (:departmentCode IS NULL OR UPPER(d.departmentCode) = UPPER(:departmentCode))
+          AND (CAST(:departmentCode AS String) IS NULL OR UPPER(d.departmentCode) = UPPER(CAST(:departmentCode AS String)))
           AND (:departmentStatus IS NULL OR d.departmentStatus = :departmentStatus)
     """)
     List<Department> findDepartmentByFilter(
