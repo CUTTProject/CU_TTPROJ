@@ -6,6 +6,8 @@ public class ActivityEnum {
         ACADEMIC_PERIOD_CREATED,
         COURSE_CREATED,
         LECTURER_CREATED,
+        PROGRAM_CREATED,
+        PROGRAMS_UPLOADED,
         ROOM_CREATED,
         ROOMS_UPLOADED,
         STUDENT_CREATED,

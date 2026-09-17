@@ -25,4 +25,5 @@ public class UpdateStudentRequest {
 
     private StudentEnum.StudentLevel studentLevel;
     private UUID studentDepartmentId;
+    private UUID studentProgramId;
 }

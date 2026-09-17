@@ -27,6 +27,10 @@ public class Student extends TenantAwareEntity {
     @JoinColumn(name = "studentDepartmentId")
     private Department studentDepartment;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "studentProgramId")
+    private Program studentProgram;
+
     @Enumerated(EnumType.STRING)
     private StudentEnum.StudentStatus studentStatus;
 

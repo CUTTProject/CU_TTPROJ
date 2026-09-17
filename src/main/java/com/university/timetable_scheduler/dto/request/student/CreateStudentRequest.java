@@ -34,4 +34,7 @@ public class CreateStudentRequest {
 
     @NotNull(message = "Department ID is required")
     private UUID studentDepartmentId;
+
+    /** Optional, so existing callers that predate programmes keep working. */
+    private UUID studentProgramId;
 }

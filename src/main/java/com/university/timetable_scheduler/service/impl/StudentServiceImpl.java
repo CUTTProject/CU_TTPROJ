@@ -3,10 +3,12 @@ package com.university.timetable_scheduler.service.impl;
 import com.university.timetable_scheduler.dto.request.student.*;
 import com.university.timetable_scheduler.dto.response.student.*;
 import com.university.timetable_scheduler.entity.Department;
+import com.university.timetable_scheduler.entity.Program;
 import com.university.timetable_scheduler.entity.School;
 import com.university.timetable_scheduler.entity.Student;
 import com.university.timetable_scheduler.mapper.StudentMapper;
 import com.university.timetable_scheduler.repository.DepartmentRepository;
+import com.university.timetable_scheduler.repository.ProgramRepository;
 import com.university.timetable_scheduler.repository.SchoolRepository;
 import com.university.timetable_scheduler.repository.StudentRepository;
 import com.university.timetable_scheduler.service.StudentService;
@@ -25,9 +27,15 @@ import java.util.List;
 public class StudentServiceImpl implements StudentService {
     private final StudentRepository studentRepository;
     private final DepartmentRepository departmentRepository;
+    private final ProgramRepository programRepository;
     private final StudentMapper studentMapper;
     private final SchoolRepository schoolRepository;
     private final ActivityServiceImpl activityService;
+
+    private Program findProgram(java.util.UUID programId) {
+        return programRepository.findByIdAndSchoolId(programId, TenantContext.getSchoolId())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Program not found"));
+    }
 
     private School currentSchool() {
         return schoolRepository.findLiveById(TenantContext.getSchoolId())
@@ -46,6 +54,9 @@ public class StudentServiceImpl implements StudentService {
         entity.setStudentEmail(request.getStudentEmail());
         entity.setStudentLevel(request.getStudentLevel());
         entity.setStudentDepartment(department);
+        if (request.getStudentProgramId() != null) {
+            entity.setStudentProgram(findProgram(request.getStudentProgramId()));
+        }
         Student saved = studentRepository.save(entity);
         activityService.record(ActivityEnum.ActivityType.STUDENT_CREATED, "New student added",
                 ActivityServiceImpl.label(saved.getStudentFirstName(), saved.getStudentLastName()) + " was added");
@@ -62,7 +73,8 @@ public class StudentServiceImpl implements StudentService {
                 TenantContext.getSchoolId(),
                 request.getId(), request.getStudentFirstName(), request.getStudentLastName(),
                 request.getStudentMatriculationNumber(), request.getStudentEmail(),
-                request.getStudentLevel(), request.getStudentDepartmentId(), request.getStudentStatus());
+                request.getStudentLevel(), request.getStudentDepartmentId(),
+                request.getStudentProgramId(), request.getStudentStatus());
         ReadStudentResponse response = new ReadStudentResponse();
         ReadStudentResponse.Data responseData = new ReadStudentResponse.Data();
         responseData.setStudents(studentMapper.toResponseList(list));
@@ -84,6 +96,9 @@ public class StudentServiceImpl implements StudentService {
             Department department = departmentRepository.findByIdAndSchoolId(request.getStudentDepartmentId(), TenantContext.getSchoolId())
                     .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Department not found"));
             entity.setStudentDepartment(department);
+        }
+        if (request.getStudentProgramId() != null) {
+            entity.setStudentProgram(findProgram(request.getStudentProgramId()));
         }
         UpdateStudentResponse response = new UpdateStudentResponse();
         UpdateStudentResponse.Data responseData = new UpdateStudentResponse.Data();

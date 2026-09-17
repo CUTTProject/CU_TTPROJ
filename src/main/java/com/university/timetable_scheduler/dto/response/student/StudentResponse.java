@@ -17,6 +17,7 @@ public class StudentResponse {
     private String studentEmail;
     private StudentEnum.StudentLevel studentLevel;
     private UUID studentDepartmentId;
+    private UUID studentProgramId;
     private StudentEnum.StudentStatus studentStatus;
 }
 
