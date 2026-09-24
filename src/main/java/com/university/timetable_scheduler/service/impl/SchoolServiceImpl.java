@@ -85,6 +85,11 @@ public class SchoolServiceImpl implements SchoolService {
     public UpdateSchoolResponse updateSchool(UpdateSchoolRequest request) {
         School entity = requireOwnSchool(request.getId());
         schoolMapper.updateDtoToEntity(request, entity);
+        // Checked after merging, since either hour may have been left as it was.
+        if (!entity.getSchoolDayStartHour().isBefore(entity.getSchoolDayEndHour())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "schoolDayStartHour must be before schoolDayEndHour");
+        }
         UpdateSchoolResponse response = new UpdateSchoolResponse();
         UpdateSchoolResponse.Data data = new UpdateSchoolResponse.Data();
         data.setSchool(schoolMapper.toResponse(entity));
