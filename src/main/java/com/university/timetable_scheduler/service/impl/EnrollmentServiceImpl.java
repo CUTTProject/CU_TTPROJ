@@ -1,9 +1,14 @@
 package com.university.timetable_scheduler.service.impl;
 
-import com.opencsv.bean.CsvToBeanBuilder;
+import com.university.timetable_scheduler.bulk.BulkRow;
+import com.university.timetable_scheduler.bulk.BulkUploadOptions;
+import com.university.timetable_scheduler.bulk.BulkUploadReport;
+import com.university.timetable_scheduler.bulk.BulkUploadSupport;
+import com.university.timetable_scheduler.bulk.BulkValues;
 import com.university.timetable_scheduler.dto.request.enrollment.*;
+import com.university.timetable_scheduler.dto.response.bulk.BulkUploadResponse;
 import com.university.timetable_scheduler.dto.response.enrollment.*;
-import com.university.timetable_scheduler.entity.Department;
+import com.university.timetable_scheduler.entity.AcademicPeriod;
 import com.university.timetable_scheduler.entity.Enrollment;
 import com.university.timetable_scheduler.entity.School;
 import com.university.timetable_scheduler.entity.Section;
@@ -11,8 +16,7 @@ import com.university.timetable_scheduler.entity.Student;
 import com.university.timetable_scheduler.mapper.EnrollmentMapper;
 import com.university.timetable_scheduler.repository.*;
 import com.university.timetable_scheduler.service.EnrollmentService;
-import com.university.timetable_scheduler.status.ActivityEnum;
-import com.university.timetable_scheduler.status.StudentEnum;
+import com.university.timetable_scheduler.status.BulkUploadEnum;
 import com.university.timetable_scheduler.tenant.TenantContext;
 import jakarta.transaction.Transactional;
 import lombok.AllArgsConstructor;
@@ -21,11 +25,12 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
-import java.io.Reader;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 @Service
@@ -34,10 +39,10 @@ public class EnrollmentServiceImpl implements EnrollmentService {
     private final EnrollmentRepository enrollmentRepository;
     private final StudentRepository studentRepository;
     private final SectionRepository sectionRepository;
-    private final DepartmentRepository departmentRepository;
+    private final AcademicPeriodRepository academicPeriodRepository;
     private final EnrollmentMapper enrollmentMapper;
     private final SchoolRepository schoolRepository;
-    private final ActivityServiceImpl activityService;
+    private final BulkUploadSupport bulkUploadSupport;
 
     private School currentSchool() {
         return schoolRepository.findLiveById(TenantContext.getSchoolId())
@@ -109,107 +114,91 @@ public class EnrollmentServiceImpl implements EnrollmentService {
 
     @Override
     @Transactional
-    public BulkEnrollmentResponse bulkEnroll(BulkEnrollmentRequest request) {
-        School school = currentSchool();
-        UUID schoolId = school.getId();
-        List<EnrollmentResponse> created = new ArrayList<>();
-        List<String> skippedReasons = new ArrayList<>();
-        int[] newStudents = {0};
-
-        for (BulkEnrollmentRequest.Row row : request.getRows()) {
-            // Resolve department scoped to school
-            List<Department> departments = departmentRepository.findDepartmentByFilter(schoolId, null, row.getStudentDepartment(), null, null);
-            if (departments.isEmpty()) {
-                skippedReasons.add("Row [" + row.getStudentMatriculationNumber() + " → " + row.getCourseSection() + "]: Department '" + row.getStudentDepartment() + "' not found");
-                continue;
-            }
-            Department department = departments.get(0);
-
-            // Resolve section by name AND academic period, scoped to school
-            List<Section> sections = sectionRepository.findSectionByFilter(schoolId, null, null, row.getCourseSection(), request.getAcademicPeriodId(), null);
-            if (sections.isEmpty()) {
-                skippedReasons.add("Row [" + row.getStudentMatriculationNumber() + " → " + row.getCourseSection() + "]: Section '" + row.getCourseSection() + "' not found in the specified academic period");
-                continue;
-            }
-            Section section = sections.get(0);
-
-            // Find or create student
-            Student student = studentRepository
-                    .findByMatriculationNumberForTenant(row.getStudentMatriculationNumber(), schoolId)
-                    .orElseGet(() -> {
-                        Student s = new Student();
-                        s.setSchool(school);
-                        s.setStudentMatriculationNumber(row.getStudentMatriculationNumber());
-                        s.setStudentFirstName(row.getStudentFirstName());
-                        s.setStudentLastName(row.getStudentLastName());
-                        s.setStudentEmail(row.getStudentEmail());
-                        s.setStudentLevel(row.getStudentLevel());
-                        s.setStudentDepartment(department);
-                        newStudents[0]++;
-                        return studentRepository.save(s);
-                    });
-
-            // Skip if already enrolled
-            if (enrollmentRepository.existsForTenant(schoolId, student.getId(), section.getId())) {
-                skippedReasons.add("Row [" + row.getStudentMatriculationNumber() + " → " + row.getCourseSection() + "]: Already enrolled");
-                continue;
-            }
-
-            Enrollment enrollment = new Enrollment();
-            enrollment.setSchool(school);
-            enrollment.setEnrollmentStudent(student);
-            enrollment.setEnrollmentSection(section);
-            Enrollment saved = enrollmentRepository.save(enrollment);
-            created.add(enrollmentMapper.toResponse(saved));
-        }
-
-        String summary = "%d new student(s) and %d enrollment(s) were imported"
-                .formatted(newStudents[0], created.size());
-        if (!skippedReasons.isEmpty()) summary += ", " + skippedReasons.size() + " row(s) skipped";
-        activityService.record(ActivityEnum.ActivityType.STUDENTS_IMPORTED, "Student data imported", summary);
-
-        BulkEnrollmentResponse response = new BulkEnrollmentResponse();
-        BulkEnrollmentResponse.Data data = new BulkEnrollmentResponse.Data();
-        data.setTotalProcessed(request.getRows().size());
-        data.setTotalCreated(created.size());
-        data.setTotalSkipped(skippedReasons.size());
-        data.setEnrollments(created);
-        data.setSkippedReasons(skippedReasons);
-        response.setData(data);
-        return response;
+    public BulkUploadResponse bulkUploadEnrollments(MultipartFile file, UUID academicPeriodId, boolean dryRun) {
+        AcademicPeriod period = findPeriod(academicPeriodId);
+        return bulkUploadSupport.importCsv(file, BulkUploadEnrollmentArrayRequest.Row.class,
+                new BulkUploadOptions(BulkUploadEnum.BulkDataset.ENROLLMENTS, period.getId(), dryRun),
+                (rows, report) -> processEnrollmentRows(rows, report, period));
     }
 
     @Override
     @Transactional
-    public BulkEnrollmentResponse bulkEnrollFromFile(MultipartFile file, UUID academicPeriodId) {
-        List<BulkEnrollmentFileRequest> csvRows;
-        try (Reader reader = new BufferedReader(new InputStreamReader(file.getInputStream()))) {
-            csvRows = new CsvToBeanBuilder<BulkEnrollmentFileRequest>(reader)
-                    .withType(BulkEnrollmentFileRequest.class)
-                    .withIgnoreLeadingWhiteSpace(true)
-                    .build()
-                    .parse();
-        } catch (Exception e) {
-            throw new RuntimeException("Failed to parse enrollment CSV: " + e.getMessage(), e);
+    public BulkUploadResponse bulkUploadEnrollmentsArray(BulkUploadEnrollmentArrayRequest request, boolean dryRun) {
+        AcademicPeriod period = findPeriod(request.getAcademicPeriodId());
+        return bulkUploadSupport.importRows(request.getRows(),
+                new BulkUploadOptions(BulkUploadEnum.BulkDataset.ENROLLMENTS, period.getId(), dryRun),
+                (rows, report) -> processEnrollmentRows(rows, report, period));
+    }
+
+    private AcademicPeriod findPeriod(UUID academicPeriodId) {
+        return academicPeriodRepository.findByIdAndSchoolId(academicPeriodId, TenantContext.getSchoolId())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
+                        "Academic period not found: " + academicPeriodId));
+    }
+
+    /**
+     * Sections are matched on course code and section name within the period, since section names
+     * such as "A" repeat across courses. Students and sections must already exist; an enrollment
+     * that already exists is counted as unchanged.
+     */
+    private void processEnrollmentRows(List<BulkRow<BulkUploadEnrollmentArrayRequest.Row>> rows,
+                                       BulkUploadReport report, AcademicPeriod period) {
+        School school = currentSchool();
+        UUID schoolId = school.getId();
+
+        Map<String, Student> studentsByMatric = BulkValues.index(studentRepository.findAllBySchool_Id(schoolId),
+                Student::getStudentMatriculationNumber);
+        Map<String, Section> sectionsByKey = BulkValues.index(
+                sectionRepository.findSectionByFilter(schoolId, null, null, null, period.getId(), null),
+                s -> s.getSectionCourse() == null || s.getSectionName() == null
+                        ? null : sectionKey(s.getSectionCourse().getCourseCode(), s.getSectionName()));
+        Set<String> enrolled = new HashSet<>();
+        enrollmentRepository.findAllLiveByAcademicPeriod(schoolId, period.getId()).forEach(e ->
+                enrolled.add(e.getEnrollmentStudent().getId() + "|" + e.getEnrollmentSection().getId()));
+
+        Map<String, Integer> firstRowByKey = new HashMap<>();
+        List<Enrollment> toSave = new ArrayList<>();
+
+        for (BulkRow<BulkUploadEnrollmentArrayRequest.Row> bulkRow : rows) {
+            BulkUploadEnrollmentArrayRequest.Row row = bulkRow.data();
+            String sectionKey = BulkValues.key(sectionKey(row.getCourseCode(), row.getSectionName()));
+
+            Integer earlierRow = firstRowByKey.putIfAbsent(
+                    BulkValues.key(row.getStudentMatriculationNumber()) + "|" + sectionKey, bulkRow.rowNumber());
+            if (earlierRow != null) {
+                report.reject(bulkRow, null, null, "Same enrollment as row " + earlierRow);
+                continue;
+            }
+            Student student = studentsByMatric.get(BulkValues.key(row.getStudentMatriculationNumber()));
+            if (student == null) {
+                report.reject(bulkRow, "studentMatriculationNumber", row.getStudentMatriculationNumber(),
+                        "No student has this matriculation number. Upload students first");
+            }
+            Section section = sectionsByKey.get(sectionKey);
+            if (section == null) {
+                report.reject(bulkRow, "sectionName", row.getSectionName(), "Course " + row.getCourseCode().trim()
+                        + " has no section with this name in this academic period");
+            }
+            if (report.isRejected(bulkRow)) {
+                continue;
+            }
+
+            if (!enrolled.add(student.getId() + "|" + section.getId())) {
+                report.unchanged();
+                continue;
+            }
+            Enrollment enrollment = new Enrollment();
+            enrollment.setSchool(school);
+            enrollment.setEnrollmentStudent(student);
+            enrollment.setEnrollmentSection(section);
+            toSave.add(enrollment);
+            report.created();
         }
 
-        List<BulkEnrollmentRequest.Row> rows = new ArrayList<>();
-        for (BulkEnrollmentFileRequest csvRow : csvRows) {
-            BulkEnrollmentRequest.Row row = new BulkEnrollmentRequest.Row();
-            row.setStudentMatriculationNumber(csvRow.getStudentMatriculationNumber());
-            row.setStudentFirstName(csvRow.getStudentFirstName());
-            row.setStudentLastName(csvRow.getStudentLastName());
-            row.setStudentEmail(csvRow.getStudentEmail());
-            row.setStudentLevel(StudentEnum.StudentLevel.valueOf(
-                    csvRow.getStudentLevel().trim().toUpperCase()));
-            row.setStudentDepartment(csvRow.getStudentDepartment());
-            row.setCourseSection(csvRow.getCourseSection());
-            rows.add(row);
-        }
+        enrollmentRepository.saveAll(toSave);
+    }
 
-        BulkEnrollmentRequest bulkRequest = new BulkEnrollmentRequest();
-        bulkRequest.setAcademicPeriodId(academicPeriodId);
-        bulkRequest.setRows(rows);
-        return bulkEnroll(bulkRequest);
+    private static String sectionKey(String courseCode, String sectionName) {
+        return courseCode.trim() + "|" + sectionName.trim();
     }
 }

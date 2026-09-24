@@ -1,6 +1,7 @@
 package com.university.timetable_scheduler.controller;
 
 import com.university.timetable_scheduler.dto.request.program.*;
+import com.university.timetable_scheduler.dto.response.bulk.BulkUploadResponse;
 import com.university.timetable_scheduler.dto.response.program.*;
 import com.university.timetable_scheduler.service.impl.ProgramServiceImpl;
 import io.swagger.v3.oas.annotations.Operation;
@@ -45,20 +46,24 @@ public class ProgramController {
         return programService.readStats();
     }
 
-    @Operation(summary = "Bulk upload programmes from a CSV file. Columns - "
-            + "programName, departmentCode, programCoordinatorStaffNumber, programLevel "
-            + "(UNDERGRADUATE | POSTGRADUATE), programDuration, programDescription, "
-            + "programStatus (ACTIVE | INACTIVE). Upserts by 'programName + department'.")
+    @Operation(summary = "Bulk upload programmes from a CSV file. Columns: programCode, programName, "
+            + "departmentCode, programCoordinatorStaffNumber, programLevel (UNDERGRADUATE | "
+            + "POSTGRADUATE), programDuration, programDescription, programStatus (ACTIVE | INACTIVE). "
+            + "Upserts by programCode. Valid rows are saved; rejected rows are listed with the reason. "
+            + "Pass dryRun=true to validate and see the counts without saving.")
     @PostMapping(value = "/bulk-upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public BulkUploadProgramResponse bulkUploadPrograms(@RequestPart("file") MultipartFile file) {
-        return programService.bulkUploadPrograms(file);
+    public BulkUploadResponse bulkUploadPrograms(
+            @RequestPart("file") MultipartFile file,
+            @RequestParam(defaultValue = "false") boolean dryRun) {
+        return programService.bulkUploadPrograms(file, dryRun);
     }
 
-    @Operation(summary = "Bulk upload programmes from a JSON array. Rows mirror the CSV columns. "
-            + "Upserts by 'programName + department' - existing programmes are updated, new ones created.")
+    @Operation(summary = "Bulk upload programmes from a JSON array. Rows use the CSV column names. Pass "
+            + "dryRun=true to validate and see the counts without saving.")
     @PostMapping(value = "/bulk-upload/array", consumes = MediaType.APPLICATION_JSON_VALUE)
-    public BulkUploadProgramResponse bulkUploadProgramsArray(
-            @Valid @RequestBody BulkUploadProgramArrayRequest request) {
-        return programService.bulkUploadProgramsArray(request);
+    public BulkUploadResponse bulkUploadProgramsArray(
+            @Valid @RequestBody BulkUploadProgramArrayRequest request,
+            @RequestParam(defaultValue = "false") boolean dryRun) {
+        return programService.bulkUploadProgramsArray(request, dryRun);
     }
 }

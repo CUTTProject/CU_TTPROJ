@@ -1,6 +1,7 @@
 package com.university.timetable_scheduler.controller;
 
 import com.university.timetable_scheduler.dto.request.room.*;
+import com.university.timetable_scheduler.dto.response.bulk.BulkUploadResponse;
 import com.university.timetable_scheduler.dto.response.room.*;
 import com.university.timetable_scheduler.service.impl.RoomServiceImpl;
 import io.swagger.v3.oas.annotations.Operation;
@@ -36,21 +37,23 @@ public class RoomController {
         return roomService.deleteRoom(request);
     }
 
-    @Operation(summary = "Bulk upload rooms from a CSV file. "
-            + "Format - {roomNumber, roomBuilding, roomCapacity, roomType (LAB | SEMINAR_ROOM | LECTURE_THEATRE)} "
-            + "Upserts by 'roomNumber + roomBuilding' - existing rooms are updated, new ones are created.")
+    @Operation(summary = "Bulk upload rooms from a CSV file. Columns: roomNumber, roomBuilding, roomCapacity, "
+            + "roomType (CLASS | LAB | SEMINAR_ROOM | LECTURE_THEATRE). Upserts by roomNumber + "
+            + "roomBuilding. Valid rows are saved; rejected rows are listed with the reason. Pass "
+            + "dryRun=true to validate and see the counts without saving.")
     @PostMapping(value = "/bulk-upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public BulkUploadRoomResponse bulkUploadRooms(
-            @RequestPart("file") MultipartFile file) {
-        return roomService.bulkUploadRooms(file);
+    public BulkUploadResponse bulkUploadRooms(
+            @RequestPart("file") MultipartFile file,
+            @RequestParam(defaultValue = "false") boolean dryRun) {
+        return roomService.bulkUploadRooms(file, dryRun);
     }
 
-    @Operation(summary = "Bulk upload rooms from a JSON array. "
-            + "Format - {roomNumber, roomBuilding, roomCapacity, roomType (LAB | SEMINAR_ROOM | LECTURE_THEATRE)} "
-            + "Upserts by 'roomNumber + roomBuilding' - existing rooms are updated, new ones are created.")
+    @Operation(summary = "Bulk upload rooms from a JSON array. Rows use the CSV column names. Pass dryRun=true to "
+            + "validate and see the counts without saving.")
     @PostMapping(value = "/bulk-upload/array", consumes = MediaType.APPLICATION_JSON_VALUE)
-    public BulkUploadRoomResponse bulkUploadRoomsArray(
-            @Valid @RequestBody BulkUploadRoomArrayRequest request) {
-        return roomService.bulkUploadRoomsArray(request);
+    public BulkUploadResponse bulkUploadRoomsArray(
+            @Valid @RequestBody BulkUploadRoomArrayRequest request,
+            @RequestParam(defaultValue = "false") boolean dryRun) {
+        return roomService.bulkUploadRoomsArray(request, dryRun);
     }
 }

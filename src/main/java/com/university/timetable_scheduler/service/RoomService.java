@@ -1,6 +1,7 @@
 package com.university.timetable_scheduler.service;
 
 import com.university.timetable_scheduler.dto.request.room.*;
+import com.university.timetable_scheduler.dto.response.bulk.BulkUploadResponse;
 import com.university.timetable_scheduler.dto.response.room.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -14,9 +15,9 @@ public interface RoomService {
 
     DeleteRoomResponse deleteRoom(DeleteRoomRequest request);
 
-    BulkUploadRoomResponse bulkUploadRooms(MultipartFile file);
+    BulkUploadResponse bulkUploadRooms(MultipartFile file, boolean dryRun);
 
-    BulkUploadRoomResponse bulkUploadRoomsArray(BulkUploadRoomArrayRequest request);
+    BulkUploadResponse bulkUploadRoomsArray(BulkUploadRoomArrayRequest request, boolean dryRun);
 
 }
 

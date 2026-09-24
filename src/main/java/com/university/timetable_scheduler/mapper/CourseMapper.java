@@ -11,6 +11,8 @@ import java.util.List;
     componentModel = "spring", unmappedTargetPolicy = ReportingPolicy.ERROR
 )
 public interface CourseMapper {
+    @Mapping(source = "courseDepartment.id", target = "courseDepartmentId")
+    @Mapping(source = "courseDepartment.departmentName", target = "courseDepartmentName")
     CourseResponse toResponse(Course course);
     List<CourseResponse> toResponseList(List<Course> courses);
 

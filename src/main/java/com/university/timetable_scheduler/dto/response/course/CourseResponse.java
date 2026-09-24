@@ -15,6 +15,8 @@ public class CourseResponse {
     private String courseName;
     private String courseDescription;
     private Integer courseUnit;
+    private UUID courseDepartmentId;
+    private String courseDepartmentName;
     private CourseEnum.CourseLevel courseLevel;
     private CourseEnum.CourseStatus courseStatus;
 }

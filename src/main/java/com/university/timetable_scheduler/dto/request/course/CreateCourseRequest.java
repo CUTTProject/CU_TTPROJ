@@ -6,6 +6,8 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.util.UUID;
+
 @AllArgsConstructor
 @Getter
 @Setter
@@ -23,6 +25,9 @@ public class CreateCourseRequest {
     private Integer courseUnit;
 
     private String courseDescription;
+
+    /** Optional, so courses can still be created before departments are set up. */
+    private UUID courseDepartmentId;
 
     @NotNull(message = "Course level is required")
     private CourseEnum.CourseLevel courseLevel;

@@ -1,6 +1,7 @@
 package com.university.timetable_scheduler.service;
 
 import com.university.timetable_scheduler.dto.request.program.*;
+import com.university.timetable_scheduler.dto.response.bulk.BulkUploadResponse;
 import com.university.timetable_scheduler.dto.response.program.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -10,6 +11,6 @@ public interface ProgramService {
     UpdateProgramResponse updateProgram(UpdateProgramRequest request);
     DeleteProgramResponse deleteProgram(DeleteProgramRequest request);
     ProgramStatsResponse readStats();
-    BulkUploadProgramResponse bulkUploadPrograms(MultipartFile file);
-    BulkUploadProgramResponse bulkUploadProgramsArray(BulkUploadProgramArrayRequest request);
+    BulkUploadResponse bulkUploadPrograms(MultipartFile file, boolean dryRun);
+    BulkUploadResponse bulkUploadProgramsArray(BulkUploadProgramArrayRequest request, boolean dryRun);
 }

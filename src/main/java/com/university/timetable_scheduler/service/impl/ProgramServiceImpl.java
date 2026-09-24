@@ -1,7 +1,12 @@
 package com.university.timetable_scheduler.service.impl;
 
-import com.opencsv.bean.CsvToBeanBuilder;
+import com.university.timetable_scheduler.bulk.BulkRow;
+import com.university.timetable_scheduler.bulk.BulkUploadOptions;
+import com.university.timetable_scheduler.bulk.BulkUploadReport;
+import com.university.timetable_scheduler.bulk.BulkUploadSupport;
+import com.university.timetable_scheduler.bulk.BulkValues;
 import com.university.timetable_scheduler.dto.request.program.*;
+import com.university.timetable_scheduler.dto.response.bulk.BulkUploadResponse;
 import com.university.timetable_scheduler.dto.response.program.*;
 import com.university.timetable_scheduler.entity.Department;
 import com.university.timetable_scheduler.entity.Lecturer;
@@ -15,6 +20,7 @@ import com.university.timetable_scheduler.repository.SchoolRepository;
 import com.university.timetable_scheduler.repository.StudentRepository;
 import com.university.timetable_scheduler.service.ProgramService;
 import com.university.timetable_scheduler.status.ActivityEnum;
+import com.university.timetable_scheduler.status.BulkUploadEnum;
 import com.university.timetable_scheduler.status.ProgramEnum;
 import com.university.timetable_scheduler.tenant.TenantContext;
 import jakarta.transaction.Transactional;
@@ -26,15 +32,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
-import java.io.Reader;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Service
@@ -49,6 +51,7 @@ public class ProgramServiceImpl implements ProgramService {
     private final LecturerRepository lecturerRepository;
     private final StudentRepository studentRepository;
     private final ActivityServiceImpl activityService;
+    private final BulkUploadSupport bulkUploadSupport;
 
     private School currentSchool() {
         return schoolRepository.findLiveById(TenantContext.getSchoolId())
@@ -64,6 +67,17 @@ public class ProgramServiceImpl implements ProgramService {
     private Lecturer findCoordinator(UUID lecturerId) {
         return lecturerRepository.findByIdAndSchoolId(lecturerId, TenantContext.getSchoolId())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Program coordinator lecturer not found"));
+    }
+
+    private static String normalizeCode(String code) {
+        return code == null ? null : code.trim().toUpperCase();
+    }
+
+    private void ensureCodeAvailable(String programCode, UUID excludeId) {
+        if (programRepository.existsLiveByProgramCode(TenantContext.getSchoolId(), programCode, excludeId)) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT,
+                    "Program code '" + programCode + "' already exists");
+        }
     }
 
     private void ensureNameAvailable(String programName, UUID departmentId, UUID excludeId) {
@@ -102,10 +116,15 @@ public class ProgramServiceImpl implements ProgramService {
         Department department = findDepartment(request.getProgramDepartmentId());
         String programName = request.getProgramName().trim();
         ensureNameAvailable(programName, department.getId(), null);
+        String programCode = BulkValues.isBlank(request.getProgramCode()) ? null : normalizeCode(request.getProgramCode());
+        if (programCode != null) {
+            ensureCodeAvailable(programCode, null);
+        }
 
         Program entity = new Program();
         entity.setSchool(currentSchool());
         entity.setProgramName(programName);
+        entity.setProgramCode(programCode);
         entity.setProgramDepartment(department);
         entity.setProgramCoordinator(findCoordinator(request.getProgramCoordinatorId()));
         entity.setProgramLevel(request.getProgramLevel());
@@ -165,6 +184,13 @@ public class ProgramServiceImpl implements ProgramService {
             }
             request.setProgramName(request.getProgramName().trim());
         }
+        if (request.getProgramCode() != null) {
+            if (request.getProgramCode().isBlank()) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Program code cannot be blank");
+            }
+            request.setProgramCode(normalizeCode(request.getProgramCode()));
+            ensureCodeAvailable(request.getProgramCode(), entity.getId());
+        }
         // Checked against whichever department the programme ends up in, moved or not.
         String effectiveName = request.getProgramName() == null ? entity.getProgramName() : request.getProgramName();
         ensureNameAvailable(effectiveName, entity.getProgramDepartment().getId(), entity.getId());
@@ -206,140 +232,118 @@ public class ProgramServiceImpl implements ProgramService {
 
     @Override
     @Transactional
-    public BulkUploadProgramResponse bulkUploadPrograms(MultipartFile file) {
-        try (Reader reader = new BufferedReader(new InputStreamReader(file.getInputStream()))) {
-            List<BulkUploadProgramFileRequest> rows =
-                    new CsvToBeanBuilder<BulkUploadProgramFileRequest>(reader)
-                            .withType(BulkUploadProgramFileRequest.class)
-                            .withIgnoreLeadingWhiteSpace(true)
-                            .build()
-                            .parse();
-
-            UploadOutcome outcome = processProgramRows(rows.stream().map(r -> {
-                BulkUploadProgramArrayRequest.Row row = new BulkUploadProgramArrayRequest.Row();
-                row.setProgramName(r.getProgramName());
-                row.setDepartmentCode(r.getDepartmentCode());
-                row.setProgramCoordinatorStaffNumber(r.getProgramCoordinatorStaffNumber());
-                row.setProgramLevel(r.getProgramLevel());
-                row.setProgramDuration(r.getProgramDuration());
-                row.setProgramDescription(r.getProgramDescription());
-                row.setProgramStatus(r.getProgramStatus());
-                return row;
-            }).toList(), currentSchool());
-
-            return uploadResponse(outcome, rows.size());
-
-        } catch (RuntimeException e) {
-            throw e;
-        } catch (Exception e) {
-            throw new RuntimeException("Program bulk upload failed: " + e.getMessage(), e);
-        }
+    public BulkUploadResponse bulkUploadPrograms(MultipartFile file, boolean dryRun) {
+        return bulkUploadSupport.importCsv(file, BulkUploadProgramArrayRequest.Row.class,
+                BulkUploadOptions.of(BulkUploadEnum.BulkDataset.PROGRAMS, dryRun), this::processProgramRows);
     }
 
     @Override
     @Transactional
-    public BulkUploadProgramResponse bulkUploadProgramsArray(BulkUploadProgramArrayRequest request) {
-        UploadOutcome outcome = processProgramRows(request.getPrograms(), currentSchool());
-        return uploadResponse(outcome, request.getPrograms().size());
-    }
-
-    private BulkUploadProgramResponse uploadResponse(UploadOutcome outcome, int submitted) {
-        activityService.record(ActivityEnum.ActivityType.PROGRAMS_UPLOADED, "Program data uploaded successfully",
-                ActivityServiceImpl.imported(outcome.imported(), "program"));
-
-        BulkUploadProgramResponse response = new BulkUploadProgramResponse();
-        response.setError(false);
-        response.setResponseCode("200");
-        String message = "Upload complete. " + submitted + " program(s) processed.";
-        if (outcome.skipped() > 0) {
-            message += " " + outcome.skipped() + " row(s) skipped: unknown department code or missing name.";
-        }
-        response.setResponseMessage(message);
-        return response;
+    public BulkUploadResponse bulkUploadProgramsArray(BulkUploadProgramArrayRequest request, boolean dryRun) {
+        return bulkUploadSupport.importRows(request.getPrograms(),
+                BulkUploadOptions.of(BulkUploadEnum.BulkDataset.PROGRAMS, dryRun), this::processProgramRows);
     }
 
     /**
-     * Upserts on name-within-department, the same identity rule {@code /create} enforces.
-     * A row naming a department that does not exist is skipped and counted rather than
-     * failing the whole batch, so one bad line cannot cost the operator the upload.
+     * Upserts on {@code programCode}. A row whose code is new but whose name matches a programme
+     * in the same department that has no code yet updates that programme, so programmes created
+     * before codes existed are adopted instead of duplicated.
      */
-    private UploadOutcome processProgramRows(List<BulkUploadProgramArrayRequest.Row> rows, School school) {
+    private void processProgramRows(List<BulkRow<BulkUploadProgramArrayRequest.Row>> rows, BulkUploadReport report) {
+        School school = currentSchool();
         UUID schoolId = school.getId();
 
-        Map<String, Department> departmentsByCode = departmentRepository.findAllBySchool_Id(schoolId).stream()
-                .filter(d -> d.getDepartmentCode() != null && !d.getDepartmentCode().isBlank())
-                .collect(Collectors.toMap(d -> d.getDepartmentCode().trim().toUpperCase(),
-                        Function.identity(), (first, duplicate) -> first));
+        Map<String, Department> departmentsByCode =
+                BulkValues.index(departmentRepository.findAllBySchool_Id(schoolId), Department::getDepartmentCode);
+        Map<String, Lecturer> lecturersByStaffNumber =
+                BulkValues.index(lecturerRepository.findAllBySchool_Id(schoolId), Lecturer::getLecturerStaffNumber);
 
-        Map<String, Lecturer> lecturersByStaffNumber = lecturerRepository.findAllBySchool_Id(schoolId).stream()
-                .filter(l -> l.getLecturerStaffNumber() != null && !l.getLecturerStaffNumber().isBlank())
-                .collect(Collectors.toMap(l -> l.getLecturerStaffNumber().trim().toUpperCase(),
-                        Function.identity(), (first, duplicate) -> first));
+        List<Program> existing = programRepository.findAllBySchool_Id(schoolId);
+        Map<String, Program> byCode = BulkValues.index(existing, Program::getProgramCode);
+        Map<String, Program> byName = new HashMap<>();
+        existing.stream()
+                .filter(p -> p.getProgramName() != null && p.getProgramDepartment() != null)
+                .forEach(p -> byName.putIfAbsent(programKey(p.getProgramName(), p.getProgramDepartment().getId()), p));
 
-        Map<String, Program> cache = new HashMap<>();
-        programRepository.findAllBySchool_Id(schoolId).forEach(p -> {
-            if (p.getProgramName() != null && p.getProgramDepartment() != null) {
-                cache.put(programKey(p.getProgramName(), p.getProgramDepartment().getId()), p);
-            }
-        });
-
+        Map<String, Integer> firstRowByCode = new HashMap<>();
         List<Program> toSave = new ArrayList<>();
-        int skipped = 0;
 
-        for (BulkUploadProgramArrayRequest.Row row : rows) {
-            if (row.getProgramName() == null || row.getProgramName().isBlank()
-                    || row.getDepartmentCode() == null || row.getDepartmentCode().isBlank()) {
-                skipped++;
+        for (BulkRow<BulkUploadProgramArrayRequest.Row> bulkRow : rows) {
+            BulkUploadProgramArrayRequest.Row row = bulkRow.data();
+            String code = BulkValues.key(row.getProgramCode());
+
+            Integer earlierRow = firstRowByCode.putIfAbsent(code, bulkRow.rowNumber());
+            if (earlierRow != null) {
+                report.reject(bulkRow, "programCode", row.getProgramCode(),
+                        "Already given on row " + earlierRow + "; each programme may appear once");
                 continue;
             }
-            Department department = departmentsByCode.get(row.getDepartmentCode().trim().toUpperCase());
+            Department department = departmentsByCode.get(BulkValues.key(row.getDepartmentCode()));
             if (department == null) {
-                skipped++;
+                report.reject(bulkRow, "departmentCode", row.getDepartmentCode(), "No department has this code");
+            }
+            ProgramEnum.ProgramLevel level = BulkValues.parseEnum(ProgramEnum.ProgramLevel.class,
+                    row.getProgramLevel(), bulkRow, "programLevel", report);
+            ProgramEnum.ProgramStatus status = BulkValues.parseEnum(ProgramEnum.ProgramStatus.class,
+                    row.getProgramStatus(), bulkRow, "programStatus", report);
+            if (report.isRejected(bulkRow)) {
                 continue;
             }
 
-            String cacheKey = programKey(row.getProgramName(), department.getId());
-            Program program = cache.getOrDefault(cacheKey, new Program());
-            program.setSchool(school);
-            program.setProgramName(row.getProgramName().trim());
-            program.setProgramDepartment(department);
+            String name = row.getProgramName().trim();
+            String nameKey = programKey(name, department.getId());
+            Program program = byCode.get(code);
+            if (program == null) {
+                Program legacy = byName.get(nameKey);
+                if (legacy != null && legacy.getProgramCode() == null) {
+                    program = legacy;
+                }
+            }
+            Program sameName = byName.get(nameKey);
+            if (sameName != null && sameName != program) {
+                report.reject(bulkRow, "programName", name, "Another programme in this department"
+                        + (sameName.getProgramCode() == null ? "" : " (" + sameName.getProgramCode() + ")")
+                        + " already has this name");
+                continue;
+            }
 
-            if (row.getProgramCoordinatorStaffNumber() != null && !row.getProgramCoordinatorStaffNumber().isBlank()) {
-                Lecturer coordinator = lecturersByStaffNumber.get(
-                        row.getProgramCoordinatorStaffNumber().trim().toUpperCase());
-                if (coordinator != null) {
+            boolean isNew = program == null;
+            if (isNew) {
+                program = new Program();
+                program.setSchool(school);
+            } else if (program.getProgramDepartment() != null) {
+                byName.remove(programKey(program.getProgramName(), program.getProgramDepartment().getId()));
+            }
+            program.setProgramCode(code);
+            program.setProgramName(name);
+            program.setProgramDepartment(department);
+            byCode.put(code, program);
+            byName.put(nameKey, program);
+
+            if (!BulkValues.isBlank(row.getProgramCoordinatorStaffNumber())) {
+                Lecturer coordinator = lecturersByStaffNumber.get(BulkValues.key(row.getProgramCoordinatorStaffNumber()));
+                if (coordinator == null) {
+                    report.warn(bulkRow, "programCoordinatorStaffNumber", row.getProgramCoordinatorStaffNumber(),
+                            "No lecturer has this staff number; coordinator left unchanged");
+                } else {
                     program.setProgramCoordinator(coordinator);
                 }
             }
-            if (row.getProgramLevel() != null && !row.getProgramLevel().isBlank()) {
-                try {
-                    program.setProgramLevel(ProgramEnum.ProgramLevel.valueOf(row.getProgramLevel().trim().toUpperCase()));
-                } catch (IllegalArgumentException ignore) {}
-            }
-            if (row.getProgramStatus() != null && !row.getProgramStatus().isBlank()) {
-                try {
-                    program.setProgramStatus(ProgramEnum.ProgramStatus.valueOf(row.getProgramStatus().trim().toUpperCase()));
-                } catch (IllegalArgumentException ignore) {}
-            }
-            if (row.getProgramDuration() != null) {
-                program.setProgramDuration(row.getProgramDuration());
-            }
-            if (row.getProgramDescription() != null && !row.getProgramDescription().isBlank()) {
-                program.setProgramDescription(row.getProgramDescription().trim());
+            if (level != null) program.setProgramLevel(level);
+            if (status != null) program.setProgramStatus(status);
+            if (row.getProgramDuration() != null) program.setProgramDuration(row.getProgramDuration());
+            if (BulkValues.text(row.getProgramDescription()) != null) {
+                program.setProgramDescription(BulkValues.text(row.getProgramDescription()));
             }
 
             toSave.add(program);
-            cache.put(cacheKey, program);
+            if (isNew) report.created(); else report.updated();
         }
 
         programRepository.saveAll(toSave);
-        // A programme repeated in the upload is the same object twice; Program has identity equality.
-        return new UploadOutcome((int) toSave.stream().distinct().count(), skipped);
     }
 
     private static String programKey(String programName, UUID departmentId) {
         return programName.trim().toUpperCase() + "|" + departmentId;
     }
-
-    private record UploadOutcome(int imported, int skipped) {}
 }

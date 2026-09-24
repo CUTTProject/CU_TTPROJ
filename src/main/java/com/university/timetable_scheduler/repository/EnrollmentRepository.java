@@ -45,4 +45,16 @@ public interface EnrollmentRepository extends TenantAwareRepository<Enrollment> 
             @Param("studentId") UUID studentId,
             @Param("sectionId") UUID sectionId
     );
+
+    /** Every live enrollment into a section of the given period. */
+    @Query("""
+        SELECT e FROM Enrollment e
+        WHERE e.school.id = :schoolId
+          AND (e.isDeleted IS NULL OR e.isDeleted = false)
+          AND e.enrollmentSection.sectionAcademicPeriod.id = :academicPeriodId
+    """)
+    List<Enrollment> findAllLiveByAcademicPeriod(
+            @Param("schoolId") UUID schoolId,
+            @Param("academicPeriodId") UUID academicPeriodId
+    );
 }

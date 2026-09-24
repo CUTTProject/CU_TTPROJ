@@ -62,7 +62,8 @@ public interface ProgramRepository extends TenantAwareRepository<Program> {
 
     /**
      * True if another live programme in the same department already carries this name.
-     * Programmes have no code of their own, so name-within-department is the identity.
+     * Names stay unique within a department even now programmes have codes, so two rows in the
+     * programme table cannot be told apart only by a code.
      */
     @Query("""
         SELECT COUNT(p) > 0 FROM Program p
@@ -91,6 +92,20 @@ public interface ProgramRepository extends TenantAwareRepository<Program> {
             @Param("schoolId") UUID schoolId,
             @Param("programName") String programName,
             @Param("programDepartmentId") UUID programDepartmentId
+    );
+
+    /** True if another live programme in the school already uses this code (case-insensitive). */
+    @Query("""
+        SELECT COUNT(p) > 0 FROM Program p
+        WHERE p.school.id = :schoolId
+          AND (p.isDeleted IS NULL OR p.isDeleted = false)
+          AND UPPER(p.programCode) = UPPER(:programCode)
+          AND (:excludeId IS NULL OR p.id <> :excludeId)
+    """)
+    boolean existsLiveByProgramCode(
+            @Param("schoolId") UUID schoolId,
+            @Param("programCode") String programCode,
+            @Param("excludeId") UUID excludeId
     );
 
     /** Live programmes in one status, for the stat cards. */

@@ -25,6 +25,11 @@ public class Course extends TenantAwareEntity {
 
     private Integer courseUnit;
 
+    /** The department that owns the course. Null on courses created before it was recorded. */
+    @ManyToOne
+    @JoinColumn(name = "courseDepartmentId")
+    private Department courseDepartment;
+
     @Enumerated(EnumType.STRING)
     private CourseEnum.CourseLevel courseLevel;
 

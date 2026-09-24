@@ -12,9 +12,7 @@ import com.itextpdf.layout.element.Paragraph;
 import com.itextpdf.layout.element.Table;
 import com.itextpdf.layout.properties.TextAlignment;
 import com.itextpdf.layout.properties.UnitValue;
-import com.opencsv.bean.CsvToBeanBuilder;
 import com.university.timetable_scheduler.dto.request.timetable.*;
-import com.university.timetable_scheduler.dto.response.timetable.BulkUploadTimetableResponse;
 import com.university.timetable_scheduler.dto.response.timetable.TimetableEntryDTO;
 import com.university.timetable_scheduler.dto.response.timetable.TimetableResponse;
 import com.university.timetable_scheduler.entity.*;
@@ -23,9 +21,6 @@ import com.university.timetable_scheduler.service.TimetableService;
 import com.university.timetable_scheduler.solver.*;
 import com.university.timetable_scheduler.status.*;
 import com.university.timetable_scheduler.tenant.TenantContext;
-import com.university.timetable_scheduler.status.WebhookEnum;
-import com.university.timetable_scheduler.webhook.WebhookService;
-import com.university.timetable_scheduler.webhook.payload.BulkUploadResultPayload;
 import com.university.timetable_scheduler.webhook.payload.ConflictMapPayload;
 import lombok.AllArgsConstructor;
 import org.jgrapht.Graph;
@@ -35,13 +30,9 @@ import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 
-import java.io.BufferedReader;
 import java.io.ByteArrayOutputStream;
-import java.io.InputStreamReader;
-import java.io.Reader;
 import java.time.Duration;
 import java.time.LocalTime;
 import java.util.*;
@@ -54,21 +45,14 @@ public class TimetableServiceImpl implements TimetableService {
     // static, so @AllArgsConstructor leaves it out of the constructor
     private static final Logger log = LoggerFactory.getLogger(TimetableServiceImpl.class);
 
-    private CourseRepository courseRepository;
-    private DepartmentRepository departmentRepository;
-    private LecturerRepository lecturerRepository;
     private SectionRepository sectionRepository;
     private SectionLecturerRepository sectionLecturerRepository;
-    private SectionTimeslotRepository sectionTimeslotRepository;
     private EventRepository eventRepository;
     private TimeslotRepository timeslotRepository;
     private RoomRepository roomRepository;
     private AcademicPeriodRepository academicPeriodRepository;
     private SchoolRepository schoolRepository;
-    private SectionRoomRepository sectionRoomRepository;
 
-    private WebhookService webhookService;
-    private ActivityServiceImpl activityService;
 
     private CspModelBuilder cspModelBuilder;
     private ConflictGraphBuilder conflictGraphBuilder;
@@ -91,208 +75,6 @@ public class TimetableServiceImpl implements TimetableService {
                     "Academic period id, %s, is not a valid UUID".formatted(raw));
         }
     }
-
-    @Override
-    @Transactional
-    public BulkUploadTimetableResponse bulkUploadTimetable(MultipartFile file, UUID academicPeriodId) {
-        BulkUploadTimetableResponse response = new BulkUploadTimetableResponse();
-        try (Reader reader = new BufferedReader(new InputStreamReader(file.getInputStream()))) {
-
-            List<BulkUploadTimetableFileRequest> rows =
-                    new CsvToBeanBuilder<BulkUploadTimetableFileRequest>(reader)
-                            .withType(BulkUploadTimetableFileRequest.class)
-                            .withIgnoreLeadingWhiteSpace(true)
-                            .build()
-                            .parse();
-
-            processRows(rows, academicPeriodId);
-
-            response.setError(false);
-            response.setResponseCode("200");
-            response.setResponseMessage("Upload complete. " + rows.size() + " row(s) processed.");
-
-            // Transactional, so WebhookService holds this until after commit — otherwise the
-            // receiver hears about rows it cannot read yet, or that roll back.
-            webhookService.publish(TenantContext.getSchoolId(),
-                    WebhookEnum.WebhookEventType.BULK_UPLOAD_RESULT,
-                    new BulkUploadResultPayload(academicPeriodId,
-                            BulkUploadResultPayload.SOURCE_CSV, rows.size()));
-
-        } catch (RuntimeException e) {
-            throw e;
-        } catch (Exception e) {
-            throw new RuntimeException("Bulk upload failed: " + e.getMessage(), e);
-        }
-        return response;
-    }
-
-    @Override
-    @Transactional
-    public BulkUploadTimetableResponse bulkUploadTimetableArray(BulkUploadTimetableArrayRequest request) {
-        List<BulkUploadTimetableFileRequest> rows = new ArrayList<>();
-        for (BulkUploadTimetableArrayRequest.Row r : request.getRows()) {
-            BulkUploadTimetableFileRequest row = new BulkUploadTimetableFileRequest();
-            row.setCourseCode(r.getCourseCode());
-            row.setCourseTitle(r.getCourseTitle());
-            row.setCourseUnit(r.getCourseUnit());
-            row.setCourseLevel(r.getCourseLevel());
-            row.setDepartment(r.getDepartment());
-            row.setLecturerStaffNumber(r.getLecturerStaffNumber());
-            row.setLecturerFirstName(r.getLecturerFirstName());
-            row.setLecturerLastName(r.getLecturerLastName());
-            row.setLecturerEmail(r.getLecturerEmail());
-            row.setSectionName(r.getSectionName());
-            row.setSectionEnrollmentSize(r.getSectionEnrollmentSize());
-            row.setEventDurationMinutes(r.getEventDurationMinutes());
-            row.setEventType(r.getEventType());
-            row.setRooms(r.getRooms());
-            row.setTimeslot(r.getTimeslot());
-            rows.add(row);
-        }
-
-        processRows(rows, request.getAcademicPeriodId());
-
-        BulkUploadTimetableResponse response = new BulkUploadTimetableResponse();
-        response.setError(false);
-        response.setResponseCode("200");
-        response.setResponseMessage("Upload complete. " + rows.size() + " row(s) processed.");
-
-        // Deferred to after-commit; see bulkUploadTimetable.
-        webhookService.publish(TenantContext.getSchoolId(),
-                WebhookEnum.WebhookEventType.BULK_UPLOAD_RESULT,
-                new BulkUploadResultPayload(request.getAcademicPeriodId(),
-                        BulkUploadResultPayload.SOURCE_JSON, rows.size()));
-        return response;
-    }
-
-    /** Shared by the CSV and array uploads. */
-    private void processRows(List<BulkUploadTimetableFileRequest> rows, UUID academicPeriodId) {
-        School school = currentSchool();
-        UUID schoolId = school.getId();
-
-        AcademicPeriod period = academicPeriodRepository.findByIdAndSchoolId(academicPeriodId, schoolId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
-                        "Academic period not found: " + academicPeriodId));
-
-        Map<String, Department> departmentCache = new HashMap<>();
-        departmentRepository.findAllBySchool_Id(schoolId)
-                .forEach(d -> departmentCache.put(d.getDepartmentName(), d));
-
-        Map<String, Course> courseCache = new HashMap<>();
-        courseRepository.findAllBySchool_Id(schoolId)
-                .forEach(c -> courseCache.put(c.getCourseCode(), c));
-
-        Map<String, Lecturer> lecturerCache = new HashMap<>();
-        lecturerRepository.findAllBySchool_Id(schoolId)
-                .forEach(l -> lecturerCache.put(l.getLecturerStaffNumber(), l));
-
-        Map<String, Room> roomCache = new HashMap<>();
-        roomRepository.findAllBySchool_Id(schoolId)
-                .forEach(r -> { if (r.getRoomNumber() != null) roomCache.put(r.getRoomNumber(), r); });
-
-        Map<String, Timeslot> timeslotCache = new HashMap<>();
-        timeslotRepository.findAllBySchool_Id(schoolId)
-                .forEach(t -> {
-                    if (t.getTimeslotDay() != null && t.getTimeslotStartTime() != null && t.getTimeslotEndTime() != null) {
-                        String key = t.getTimeslotDay() + "|" + t.getTimeslotStartTime() + "|" + t.getTimeslotEndTime();
-                        timeslotCache.put(key, t);
-                    }
-                });
-
-        List<Event> eventsToSave = new ArrayList<>();
-
-        for (BulkUploadTimetableFileRequest row : rows) {
-            Department dept = departmentCache.computeIfAbsent(row.getDepartment(), name -> {
-                Department d = new Department();
-                d.setSchool(school);
-                d.setDepartmentName(name);
-                return departmentRepository.save(d);
-            });
-
-            Course course = courseCache.computeIfAbsent(row.getCourseCode(), code -> {
-                Course c = new Course();
-                c.setSchool(school);
-                c.setCourseCode(code);
-                c.setCourseName(row.getCourseTitle());
-                c.setCourseDescription("");
-                c.setCourseUnit(row.getCourseUnit());
-                c.setCourseLevel(CourseEnum.CourseLevel.valueOf(row.getCourseLevel().trim().toUpperCase()));
-                return courseRepository.save(c);
-            });
-
-            Lecturer lecturer = lecturerCache.computeIfAbsent(row.getLecturerStaffNumber(), staffNum -> {
-                Lecturer l = new Lecturer();
-                l.setSchool(school);
-                l.setLecturerStaffNumber(staffNum);
-                l.setLecturerFirstName(row.getLecturerFirstName());
-                l.setLecturerLastName(row.getLecturerLastName());
-                l.setLecturerEmail(row.getLecturerEmail());
-                l.setLecturerDepartment(dept);
-                return lecturerRepository.save(l);
-            });
-
-            Section section = new Section();
-            section.setSchool(school);
-            section.setSectionCourse(course);
-            section.setSectionName(row.getSectionName());
-            section.setSectionEnrollmentSize(row.getSectionEnrollmentSize());
-            section.setSectionAcademicPeriod(period);
-            Section savedSection = sectionRepository.save(section);
-
-            SectionLecturer sectionLecturer = new SectionLecturer();
-            sectionLecturer.setSchool(school);
-            sectionLecturer.setSectionLecturerSection(savedSection);
-            sectionLecturer.setSectionLecturerLecturer(lecturer);
-            sectionLecturerRepository.save(sectionLecturer);
-
-            Event event = new Event();
-            event.setSchool(school);
-            event.setEventSection(savedSection);
-            event.setEventDuration(Duration.ofMinutes(row.getEventDurationMinutes()));
-            event.setEventType(EventEnum.EventType.valueOf(row.getEventType().trim().toUpperCase()));
-            eventsToSave.add(event);
-
-            if (row.getRooms() != null && !row.getRooms().isBlank()) {
-                for (String roomName : row.getRooms().split("/")) {
-                    roomName = roomName.trim();
-                    if (roomName.isEmpty()) continue;
-                    final String finalRoomName = roomName;
-                    roomCache.computeIfAbsent(finalRoomName, rn -> {
-                        List<Room> existing = roomRepository.findRoomByFilter(
-                                schoolId, null, null, rn, null, null, null);
-                        if (!existing.isEmpty()) return existing.get(0);
-                        Room r = new Room();
-                        r.setSchool(school);
-                        r.setRoomNumber(rn);
-                        return roomRepository.save(r);
-                    });
-                }
-            }
-
-            if (row.getTimeslot() != null && !row.getTimeslot().isBlank()) {
-                for (String tsEntry : row.getTimeslot().split("/")) {
-                    tsEntry = tsEntry.trim();
-                    if (tsEntry.isEmpty()) continue;
-                    Timeslot ts = parseAndUpsertTimeslot(tsEntry, timeslotCache, school);
-                    if (ts != null) {
-                        SectionTimeslot sectionTimeslot = new SectionTimeslot();
-                        sectionTimeslot.setSchool(school);
-                        sectionTimeslot.setSectionTimeslotSection(savedSection);
-                        sectionTimeslot.setSectionTimeslotTimeslot(ts);
-                        sectionTimeslotRepository.save(sectionTimeslot);
-                    }
-                }
-            }
-        }
-
-        eventRepository.saveAll(eventsToSave);
-
-        activityService.record(ActivityEnum.ActivityType.TIMETABLE_UPLOADED, "Timetable data uploaded",
-                ActivityServiceImpl.imported(rows.size(), "row")
-                        + (period.getAcademicPeriodName() != null ? " for " + period.getAcademicPeriodName() : ""));
-    }
-
-
 
     /**
      * Everything a run produced, not only the part that gets persisted — the previous
@@ -686,62 +468,6 @@ public class TimetableServiceImpl implements TimetableService {
     }
     private static String nullSafe(String s) { return s != null ? s : "-"; }
     private static String trim(String s)     { return s != null ? s : ""; }
-
-    // Day abbreviation → enum name, for strings like "M(13:00-15:00)".
-    private static final Map<String, String> DAY_MAP = new LinkedHashMap<>();
-    static {
-        DAY_MAP.put("SUN", "SUNDAY");
-        DAY_MAP.put("SAT", "SATURDAY");
-        DAY_MAP.put("MON", "MONDAY");
-        DAY_MAP.put("TUE", "TUESDAY");
-        DAY_MAP.put("WED", "WEDNESDAY");
-        DAY_MAP.put("THU", "THURSDAY");
-        DAY_MAP.put("FRI", "FRIDAY");
-        DAY_MAP.put("TH",  "THURSDAY");
-        DAY_MAP.put("M",   "MONDAY");
-        DAY_MAP.put("T",   "TUESDAY");
-        DAY_MAP.put("W",   "WEDNESDAY");
-        DAY_MAP.put("F",   "FRIDAY");
-    }
-
-    /** Parses {@code M(13:00-15:00)} into a persisted {@link Timeslot}, reusing the cache. */
-    private Timeslot parseAndUpsertTimeslot(String entry, Map<String, Timeslot> cache, School school) {
-        int parenOpen  = entry.indexOf('(');
-        int dash       = entry.indexOf('-', parenOpen);
-        int parenClose = entry.indexOf(')', dash);
-        if (parenOpen < 0 || dash < 0 || parenClose < 0) return null;
-
-        String dayAbbr = entry.substring(0, parenOpen).trim().toUpperCase();
-        String start   = entry.substring(parenOpen + 1, dash).trim();
-        String end     = entry.substring(dash + 1, parenClose).trim();
-
-        String dayName = DAY_MAP.get(dayAbbr);
-        if (dayName == null) return null;
-
-        TimeslotEnum.TimeslotDay day;
-        try { day = TimeslotEnum.TimeslotDay.valueOf(dayName); }
-        catch (IllegalArgumentException e) { return null; }
-
-        LocalTime startTime, endTime;
-        try {
-            startTime = LocalTime.parse(start);
-            endTime   = LocalTime.parse(end);
-        } catch (Exception e) { return null; }
-
-        String cacheKey = day + "|" + startTime + "|" + endTime;
-        if (cache.containsKey(cacheKey)) return cache.get(cacheKey);
-
-        Timeslot ts = new Timeslot();
-        ts.setSchool(school);
-        ts.setTimeslotDay(day);
-        ts.setTimeslotStartTime(startTime);
-        ts.setTimeslotEndTime(endTime);
-        ts.setTimeslotDuration(Duration.between(startTime, endTime));
-        ts = timeslotRepository.save(ts);
-        cache.put(cacheKey, ts);
-        return ts;
-    }
-
 
     /**
      * Graphviz DOT of the conflict graph — red = same lecturer, orange = overlapping students.

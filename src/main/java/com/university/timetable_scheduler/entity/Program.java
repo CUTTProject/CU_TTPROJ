@@ -17,6 +17,14 @@ public class Program extends TenantAwareEntity {
     @Column(nullable = false)
     private String programName;
 
+    /**
+     * What the student and curriculum uploads reference a programme by. Unique among a school's
+     * live programmes (enforced in ProgramServiceImpl, not the schema, since programmes created
+     * before codes existed have none). Stored upper case.
+     */
+    @Column(length = 20)
+    private String programCode;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "programDepartmentId", nullable = false)
     private Department programDepartment;

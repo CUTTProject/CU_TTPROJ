@@ -4,6 +4,7 @@ import com.university.timetable_scheduler.status.ProgramEnum;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -18,6 +19,13 @@ import java.util.UUID;
 public class CreateProgramRequest {
     @NotBlank(message = "Program name is required")
     private String programName;
+
+    /**
+     * Optional here so the existing create form keeps working, but the student and curriculum
+     * uploads can only reference a programme that has one. Unique per school.
+     */
+    @Size(max = 20, message = "Program code must not exceed 20 characters")
+    private String programCode;
 
     @NotNull(message = "Department ID is required")
     private UUID programDepartmentId;

@@ -15,6 +15,7 @@ import java.util.UUID;
 public class ProgramResponse {
     private UUID id;
     private String programName;
+    private String programCode;
     private UUID programDepartmentId;
     private String programDepartmentName;
     private UUID programCoordinatorId;

@@ -1,11 +1,11 @@
 package com.university.timetable_scheduler.controller;
 
-import com.university.timetable_scheduler.dto.request.enrollment.BulkEnrollmentRequest;
+import com.university.timetable_scheduler.dto.request.enrollment.BulkUploadEnrollmentArrayRequest;
 import com.university.timetable_scheduler.dto.request.enrollment.CreateEnrollmentRequest;
 import com.university.timetable_scheduler.dto.request.enrollment.DeleteEnrollmentRequest;
 import com.university.timetable_scheduler.dto.request.enrollment.ReadEnrollmentRequest;
 import com.university.timetable_scheduler.dto.request.enrollment.UpdateEnrollmentRequest;
-import com.university.timetable_scheduler.dto.response.enrollment.BulkEnrollmentResponse;
+import com.university.timetable_scheduler.dto.response.bulk.BulkUploadResponse;
 import com.university.timetable_scheduler.dto.response.enrollment.CreateEnrollmentResponse;
 import com.university.timetable_scheduler.dto.response.enrollment.DeleteEnrollmentResponse;
 import com.university.timetable_scheduler.dto.response.enrollment.ReadEnrollmentResponse;
@@ -50,20 +50,24 @@ public class EnrollmentController {
         return enrollmentService.deleteEnrollment(request);
     }
 
-    @Operation(summary = "Endpoint to bulk create students and enroll them into sections")
-    @PostMapping("/bulk")
-    public BulkEnrollmentResponse bulkEnroll(@Valid @RequestBody BulkEnrollmentRequest request) {
-        return enrollmentService.bulkEnroll(request);
+    @Operation(summary = "Bulk upload enrollments for one academic period from a CSV file. Columns: "
+            + "studentMatriculationNumber, courseCode, sectionName. Students and sections must already "
+            + "exist. Valid rows are saved; rejected rows are listed with the reason. Pass dryRun=true "
+            + "to validate and see the counts without saving.")
+    @PostMapping(value = "/bulk-upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public BulkUploadResponse bulkUploadEnrollments(
+            @RequestPart("file") MultipartFile file,
+            @RequestParam("academicPeriodId") UUID academicPeriodId,
+            @RequestParam(defaultValue = "false") boolean dryRun) {
+        return enrollmentService.bulkUploadEnrollments(file, academicPeriodId, dryRun);
     }
 
-    @Operation(summary = "Endpoint to bulk enroll students from a CSV file. "
-            + "Expected columns: studentMatriculationNumber, studentFirstName, studentLastName, "
-            + "studentEmail, studentLevel, studentDepartment, courseSection")
-    @PostMapping(value = "/bulk/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public BulkEnrollmentResponse bulkEnrollFromFile(
-            @RequestPart("file") MultipartFile file,
-            @RequestParam("academicPeriodId") UUID academicPeriodId) {
-        return enrollmentService.bulkEnrollFromFile(file, academicPeriodId);
+    @Operation(summary = "Bulk upload enrollments for one academic period from a JSON array. Rows use the CSV "
+            + "column names. Pass dryRun=true to validate and see the counts without saving.")
+    @PostMapping(value = "/bulk-upload/array", consumes = MediaType.APPLICATION_JSON_VALUE)
+    public BulkUploadResponse bulkUploadEnrollmentsArray(
+            @Valid @RequestBody BulkUploadEnrollmentArrayRequest request,
+            @RequestParam(defaultValue = "false") boolean dryRun) {
+        return enrollmentService.bulkUploadEnrollmentsArray(request, dryRun);
     }
 }
-

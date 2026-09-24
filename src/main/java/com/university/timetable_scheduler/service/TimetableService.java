@@ -1,12 +1,9 @@
 package com.university.timetable_scheduler.service;
 
-import com.university.timetable_scheduler.dto.request.timetable.BulkUploadTimetableArrayRequest;
 import com.university.timetable_scheduler.dto.request.timetable.DownloadConflictGraphRequest;
 import com.university.timetable_scheduler.dto.request.timetable.DownloadTimetableRequest;
-import com.university.timetable_scheduler.dto.response.timetable.BulkUploadTimetableResponse;
 import com.university.timetable_scheduler.entity.Room;
 import com.university.timetable_scheduler.entity.Timeslot;
-import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 import java.util.UUID;
@@ -40,8 +37,4 @@ public interface TimetableService {
      * Red edges = SAME_LECTURER, orange edges = OVERLAPPING_STUDENTS.
      */
     String getConflictGraphDot(DownloadConflictGraphRequest downloadConflictGraphRequest);
-
-    BulkUploadTimetableResponse bulkUploadTimetable(MultipartFile file, UUID academicPeriodId);
-
-    BulkUploadTimetableResponse bulkUploadTimetableArray(BulkUploadTimetableArrayRequest request);
 }

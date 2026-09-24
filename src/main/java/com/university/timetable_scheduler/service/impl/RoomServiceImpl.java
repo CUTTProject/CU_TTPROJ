@@ -1,7 +1,12 @@
 package com.university.timetable_scheduler.service.impl;
 
-import com.opencsv.bean.CsvToBeanBuilder;
+import com.university.timetable_scheduler.bulk.BulkRow;
+import com.university.timetable_scheduler.bulk.BulkUploadOptions;
+import com.university.timetable_scheduler.bulk.BulkUploadReport;
+import com.university.timetable_scheduler.bulk.BulkUploadSupport;
+import com.university.timetable_scheduler.bulk.BulkValues;
 import com.university.timetable_scheduler.dto.request.room.*;
+import com.university.timetable_scheduler.dto.response.bulk.BulkUploadResponse;
 import com.university.timetable_scheduler.dto.response.room.*;
 import com.university.timetable_scheduler.entity.Room;
 import com.university.timetable_scheduler.entity.School;
@@ -10,6 +15,7 @@ import com.university.timetable_scheduler.repository.RoomRepository;
 import com.university.timetable_scheduler.repository.SchoolRepository;
 import com.university.timetable_scheduler.service.RoomService;
 import com.university.timetable_scheduler.status.ActivityEnum;
+import com.university.timetable_scheduler.status.BulkUploadEnum;
 import com.university.timetable_scheduler.status.RoomEnum;
 import com.university.timetable_scheduler.tenant.TenantContext;
 import jakarta.transaction.Transactional;
@@ -19,14 +25,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
-import java.io.Reader;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 
 @Service
 @AllArgsConstructor
@@ -35,6 +37,7 @@ public class RoomServiceImpl implements RoomService {
     private final RoomMapper roomMapper;
     private final SchoolRepository schoolRepository;
     private final ActivityServiceImpl activityService;
+    private final BulkUploadSupport bulkUploadSupport;
 
     private School currentSchool() {
         return schoolRepository.findLiveById(TenantContext.getSchoolId())
@@ -96,84 +99,62 @@ public class RoomServiceImpl implements RoomService {
 
     @Override
     @Transactional
-    public BulkUploadRoomResponse bulkUploadRooms(MultipartFile file) {
-        try (Reader reader = new BufferedReader(new InputStreamReader(file.getInputStream()))) {
-            List<BulkUploadRoomFileRequest> rows =
-                    new CsvToBeanBuilder<BulkUploadRoomFileRequest>(reader)
-                            .withType(BulkUploadRoomFileRequest.class)
-                            .withIgnoreLeadingWhiteSpace(true)
-                            .build()
-                            .parse();
-
-            int imported = processRoomRows(rows.stream().map(r -> {
-                BulkUploadRoomArrayRequest.Row row = new BulkUploadRoomArrayRequest.Row();
-                row.setRoomBuilding(r.getRoomBuilding());
-                row.setRoomNumber(r.getRoomNumber());
-                row.setRoomCapacity(r.getRoomCapacity());
-                row.setRoomType(r.getRoomType());
-                return row;
-            }).toList(), currentSchool());
-            activityService.record(ActivityEnum.ActivityType.ROOMS_UPLOADED, "Room data uploaded successfully",
-                    ActivityServiceImpl.imported(imported, "room"));
-
-            BulkUploadRoomResponse response = new BulkUploadRoomResponse();
-            response.setError(false);
-            response.setResponseCode("200");
-            response.setResponseMessage("Upload complete. " + rows.size() + " room(s) processed.");
-            return response;
-
-        } catch (RuntimeException e) {
-            throw e;
-        } catch (Exception e) {
-            throw new RuntimeException("Room bulk upload failed: " + e.getMessage(), e);
-        }
+    public BulkUploadResponse bulkUploadRooms(MultipartFile file, boolean dryRun) {
+        return bulkUploadSupport.importCsv(file, BulkUploadRoomArrayRequest.Row.class,
+                BulkUploadOptions.of(BulkUploadEnum.BulkDataset.ROOMS, dryRun), this::processRoomRows);
     }
 
     @Override
     @Transactional
-    public BulkUploadRoomResponse bulkUploadRoomsArray(BulkUploadRoomArrayRequest request) {
-        int imported = processRoomRows(request.getRooms(), currentSchool());
-        activityService.record(ActivityEnum.ActivityType.ROOMS_UPLOADED, "Room data uploaded successfully",
-                ActivityServiceImpl.imported(imported, "room"));
-
-        BulkUploadRoomResponse response = new BulkUploadRoomResponse();
-        response.setError(false);
-        response.setResponseCode("200");
-        response.setResponseMessage("Upload complete. " + request.getRooms().size() + " room(s) processed.");
-        return response;
+    public BulkUploadResponse bulkUploadRoomsArray(BulkUploadRoomArrayRequest request, boolean dryRun) {
+        return bulkUploadSupport.importRows(request.getRooms(),
+                BulkUploadOptions.of(BulkUploadEnum.BulkDataset.ROOMS, dryRun), this::processRoomRows);
     }
 
-    /** Returns how many distinct rooms were created or updated. */
-    private int processRoomRows(List<BulkUploadRoomArrayRequest.Row> rows, School school) {
-        UUID schoolId = school.getId();
-        Map<String, Room> cache = new HashMap<>();
-        roomRepository.findAllBySchool_Id(schoolId)
-                .forEach(r -> { if (r.getRoomNumber() != null) cache.put(r.getRoomNumber() + "|" + r.getRoomBuilding(), r); });
+    /** Upserts on room number within building; a blank building is its own building. */
+    private void processRoomRows(List<BulkRow<BulkUploadRoomArrayRequest.Row>> rows, BulkUploadReport report) {
+        School school = currentSchool();
+        Map<String, Room> existing = BulkValues.index(roomRepository.findAllBySchool_Id(school.getId()),
+                r -> r.getRoomNumber() == null ? null : roomKey(r.getRoomNumber(), r.getRoomBuilding()));
 
+        Map<String, Integer> firstRowByKey = new HashMap<>();
         List<Room> toSave = new ArrayList<>();
 
-        for (BulkUploadRoomArrayRequest.Row row : rows) {
-            if (row.getRoomNumber() == null || row.getRoomNumber().isBlank()) continue;
+        for (BulkRow<BulkUploadRoomArrayRequest.Row> bulkRow : rows) {
+            BulkUploadRoomArrayRequest.Row row = bulkRow.data();
+            String key = BulkValues.key(roomKey(row.getRoomNumber(), row.getRoomBuilding()));
 
-            String cacheKey = row.getRoomNumber() + "|" + row.getRoomBuilding();
-            Room room = cache.getOrDefault(cacheKey, new Room());
-            room.setSchool(school);
-            room.setRoomNumber(row.getRoomNumber());
-            room.setRoomBuilding(row.getRoomBuilding());
-
-            if (row.getRoomCapacity() != null) room.setRoomCapacity(row.getRoomCapacity());
-            if (row.getRoomType() != null && !row.getRoomType().isBlank()) {
-                try {
-                    room.setRoomType(RoomEnum.RoomType.valueOf(row.getRoomType().trim().toUpperCase()));
-                } catch (IllegalArgumentException ignore) {}
+            Integer earlierRow = firstRowByKey.putIfAbsent(key, bulkRow.rowNumber());
+            if (earlierRow != null) {
+                report.reject(bulkRow, "roomNumber", row.getRoomNumber(),
+                        "Already given on row " + earlierRow + "; each room may appear once");
+                continue;
+            }
+            RoomEnum.RoomType roomType = BulkValues.parseEnum(RoomEnum.RoomType.class,
+                    row.getRoomType(), bulkRow, "roomType", report);
+            if (report.isRejected(bulkRow)) {
+                continue;
             }
 
+            Room room = existing.get(key);
+            boolean isNew = room == null;
+            if (isNew) {
+                room = new Room();
+                room.setSchool(school);
+                room.setRoomNumber(row.getRoomNumber().trim());
+                room.setRoomBuilding(BulkValues.text(row.getRoomBuilding()));
+            }
+            if (row.getRoomCapacity() != null) room.setRoomCapacity(row.getRoomCapacity());
+            if (roomType != null) room.setRoomType(roomType);
+
             toSave.add(room);
-            cache.put(cacheKey, room);
+            if (isNew) report.created(); else report.updated();
         }
 
         roomRepository.saveAll(toSave);
-        // A room repeated in the upload is the same object twice; Room has identity equality.
-        return (int) toSave.stream().distinct().count();
+    }
+
+    private static String roomKey(String roomNumber, String roomBuilding) {
+        return roomNumber.trim() + "|" + (roomBuilding == null ? "" : roomBuilding.trim());
     }
 }

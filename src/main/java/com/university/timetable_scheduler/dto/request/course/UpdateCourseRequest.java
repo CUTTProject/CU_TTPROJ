@@ -16,6 +16,7 @@ public class UpdateCourseRequest {
 
     private String courseName;
     private String courseDescription;
+    private UUID courseDepartmentId;
 
     @Min(value = 1, message = "Course unit must be at least 1")
     @Max(value = 10, message = "Course unit must not exceed 10")

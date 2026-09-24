@@ -1,10 +1,8 @@
 package com.university.timetable_scheduler.controller;
 
-import com.university.timetable_scheduler.dto.request.timetable.BulkUploadTimetableArrayRequest;
 import com.university.timetable_scheduler.dto.request.timetable.DownloadConflictGraphRequest;
 import com.university.timetable_scheduler.dto.request.timetable.DownloadTimetableRequest;
 import com.university.timetable_scheduler.dto.request.timetable.GenerateTimetableRequest;
-import com.university.timetable_scheduler.dto.response.timetable.BulkUploadTimetableResponse;
 import com.university.timetable_scheduler.dto.response.timetable.GenerateTimetableAcceptedResponse;
 import com.university.timetable_scheduler.dto.response.timetable.TimetableJobStatusResponse;
 import com.university.timetable_scheduler.generation.GenerationJob;
@@ -21,7 +19,6 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.multipart.MultipartFile;
 
 import java.nio.charset.StandardCharsets;
 import java.util.UUID;
@@ -34,22 +31,6 @@ public class TimetableController {
     private final TimetableServiceImpl timetableService;
     private final TimetableGenerationRunner generationRunner;
     private final GenerationJobRegistry jobRegistry;
-
-    @Operation(summary = "Bulk upload timetable from CSV. Provide the academicPeriodId of an existing academic period.")
-    @PostMapping(value = "bulk-upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public BulkUploadTimetableResponse bulkUploadTimetable(
-            @RequestPart("file") MultipartFile file,
-            @RequestParam("academicPeriodId") UUID academicPeriodId) {
-        return timetableService.bulkUploadTimetable(file, academicPeriodId);
-    }
-
-    @Operation(summary = "Bulk upload timetable from a JSON array. "
-            + "academicSession is provided inside the request body.")
-    @PostMapping(value = "bulk-upload/array", consumes = MediaType.APPLICATION_JSON_VALUE)
-    public BulkUploadTimetableResponse bulkUploadTimetableArray(
-            @Valid @RequestBody BulkUploadTimetableArrayRequest request) {
-        return timetableService.bulkUploadTimetableArray(request);
-    }
 
     @Operation(summary = "Queue a timetable generation. Returns a job id immediately; "
             + "the finished timetable is delivered to the school's webhook.")

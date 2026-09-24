@@ -127,7 +127,7 @@ Every delivery is a POST with this body:
 | `UNSCHEDULABLE_EVENTS` | Events no room-and-slot combination can satisfy. A data problem: more solver time will not help. |
 | `CONFLICT_MAP` | The structural conflict graph — which sections can never share a slot, and why. |
 | `GENERATION_FAILED` | The run did not produce a timetable. |
-| `BULK_UPLOAD_RESULT` | A CSV or JSON upload committed. |
+| `BULK_UPLOAD_RESULT` | A CSV or JSON upload committed (never sent for a dry run). Carries the `dataset`, the `academicPeriodId` for sections and enrollments, and the created / updated / unchanged / skipped counts. |
 
 ### Verifying a delivery
 
