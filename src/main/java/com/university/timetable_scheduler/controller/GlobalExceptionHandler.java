@@ -3,6 +3,7 @@ package com.university.timetable_scheduler.controller;
 import com.university.timetable_scheduler.dto.response.BaseResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -68,6 +69,27 @@ public class GlobalExceptionHandler {
         response.setPath(request.getRequestURI());
         response.setResponseMessage(ex.getReason());
         return ResponseEntity.status(ex.getStatusCode()).body(response);
+    }
+
+    /**
+     * Unique, foreign-key and not-null violations are the caller's data colliding with what is
+     * stored, not a server fault. The message stays generic for the same reason as
+     * {@link #handleGeneral}: the cause names tables and constraints.
+     */
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public ResponseEntity<BaseResponse> handleDataIntegrity(
+            DataIntegrityViolationException ex, HttpServletRequest request) {
+
+        log.warn("Data integrity violation on {} {}: {}", request.getMethod(), request.getRequestURI(),
+                ex.getMostSpecificCause().getMessage());
+
+        BaseResponse response = new BaseResponse();
+        response.setResponseCode(HttpStatus.CONFLICT.toString());
+        response.setError(true);
+        response.setPath(request.getRequestURI());
+        response.setResponseMessage("The request conflicts with existing data "
+                + "(a duplicate value, or a reference to a missing record).");
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(response);
     }
 
     @ExceptionHandler(Exception.class)

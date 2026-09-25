@@ -37,6 +37,14 @@ public class SchoolServiceImpl implements SchoolService {
 
     @Override
     public CreateSchoolResponse createSchool(CreateSchoolRequest request) {
+        if (!request.getSchoolDayStartHour().isBefore(request.getSchoolDayEndHour())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "schoolDayStartHour must be before schoolDayEndHour");
+        }
+        ensureUnique(schoolRepository.existsBySchoolName(request.getSchoolName()), "name");
+        ensureUnique(schoolRepository.existsBySchoolAdminEmail(request.getSchoolAdminEmail()), "admin email");
+        ensureUnique(schoolRepository.existsBySchoolAddress(request.getSchoolAddress()), "address");
+        ensureUnique(schoolRepository.existsBySchoolPhone(request.getSchoolPhone()), "phone");
         School entity = new School();
         entity.setSchoolName(request.getSchoolName());
         entity.setSchoolAddress(request.getSchoolAddress());
@@ -51,6 +59,17 @@ public class SchoolServiceImpl implements SchoolService {
         data.setSchool(schoolMapper.toResponse(saved));
         response.setData(data);
         return response;
+    }
+
+    /**
+     * Friendly pre-check for the unique columns on {@link School}. A concurrent insert can still
+     * slip past; GlobalExceptionHandler maps that DataIntegrityViolationException to a 409.
+     */
+    private void ensureUnique(boolean taken, String field) {
+        if (taken) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT,
+                    "A school with this " + field + " already exists");
+        }
     }
 
     /**

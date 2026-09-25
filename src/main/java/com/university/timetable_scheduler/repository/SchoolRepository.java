@@ -28,6 +28,15 @@ public interface SchoolRepository extends JpaRepository<School, UUID> {
             @Param("schoolAdminEmail") String schoolAdminEmail
     );
 
+    // Uniqueness checks deliberately include soft-deleted rows: the DB unique constraints do.
+    boolean existsBySchoolName(String schoolName);
+
+    boolean existsBySchoolAdminEmail(String schoolAdminEmail);
+
+    boolean existsBySchoolAddress(String schoolAddress);
+
+    boolean existsBySchoolPhone(String schoolPhone);
+
     @Query("""
         SELECT s FROM School s
         WHERE s.id = :schoolId
