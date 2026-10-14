@@ -38,7 +38,9 @@ public class LecturerController {
     }
 
     @Operation(summary = "Bulk upload lecturers from a CSV file. Columns: lecturerStaffNumber, lecturerFirstName, "
-            + "lecturerLastName, lecturerEmail, departmentCode. Upserts by lecturerStaffNumber. Valid "
+            + "lecturerLastName, lecturerEmail, departmentCode. Upserts by lecturerStaffNumber. The name and email "
+            + "columns are optional, a blank cell clears a stored value and a missing column keeps it; a lecturer without a name is "
+            + "shown by staff number. Valid "
             + "rows are saved; rejected rows are listed with the reason. Pass dryRun=true to validate "
             + "and see the counts without saving.")
     @PostMapping(value = "/bulk-upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)

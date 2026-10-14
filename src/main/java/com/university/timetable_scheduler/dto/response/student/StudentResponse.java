@@ -13,6 +13,8 @@ public class StudentResponse {
     private UUID id;
     private String studentFirstName;
     private String studentLastName;
+    /** The name if the school supplied one, otherwise studentMatriculationNumber. Always set. */
+    private String studentDisplayName;
     private String studentMatriculationNumber;
     private String studentEmail;
     private StudentEnum.StudentLevel studentLevel;

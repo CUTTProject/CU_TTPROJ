@@ -18,13 +18,12 @@ public class CreateLecturerRequest {
     @NotBlank(message = "Staff number is required")
     private String lecturerStaffNumber;
 
-    @NotBlank(message = "First name is required")
+    /** Optional, like the last name. Without either, the lecturer is shown by staff number. */
     private String lecturerFirstName;
 
-    @NotBlank(message = "Last name is required")
     private String lecturerLastName;
 
-    @NotBlank(message = "Email is required")
+    /** Optional; checked only when given. */
     @Email(message = "Email must be valid")
     private String lecturerEmail;
 

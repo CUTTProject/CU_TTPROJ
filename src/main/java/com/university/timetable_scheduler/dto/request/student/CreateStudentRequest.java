@@ -16,16 +16,15 @@ import java.util.UUID;
 @Getter
 @Setter
 public class CreateStudentRequest {
-    @NotBlank(message = "First name is required")
+    /** Optional, like the last name. Without either, the student is shown by matriculation number. */
     private String studentFirstName;
 
-    @NotBlank(message = "Last name is required")
     private String studentLastName;
 
     @NotBlank(message = "Matriculation number is required")
     private String studentMatriculationNumber;
 
-    @NotBlank(message = "Email is required")
+    /** Optional; checked only when given. */
     @Email(message = "Email must be valid")
     private String studentEmail;
 

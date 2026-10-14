@@ -12,6 +12,7 @@ import lombok.Setter;
 @Setter
 public class Student extends TenantAwareEntity {
 
+    /** Names are optional: a school may identify students by matriculation number alone. */
     private String studentFirstName;
 
     private String studentLastName;
@@ -33,6 +34,11 @@ public class Student extends TenantAwareEntity {
 
     @Enumerated(EnumType.STRING)
     private StudentEnum.StudentStatus studentStatus;
+
+    /** The student's name if the school supplied one, otherwise their matriculation number. */
+    public String displayName() {
+        return PersonNames.displayName(studentMatriculationNumber, studentFirstName, studentLastName);
+    }
 
     @PrePersist
     protected void onCreate() {

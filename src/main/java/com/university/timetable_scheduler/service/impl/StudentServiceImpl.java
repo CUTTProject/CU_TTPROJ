@@ -61,10 +61,10 @@ public class StudentServiceImpl implements StudentService {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Department not found"));
         Student entity = new Student();
         entity.setSchool(currentSchool());
-        entity.setStudentFirstName(request.getStudentFirstName());
-        entity.setStudentLastName(request.getStudentLastName());
+        entity.setStudentFirstName(BulkValues.text(request.getStudentFirstName()));
+        entity.setStudentLastName(BulkValues.text(request.getStudentLastName()));
         entity.setStudentMatriculationNumber(request.getStudentMatriculationNumber());
-        entity.setStudentEmail(request.getStudentEmail());
+        entity.setStudentEmail(BulkValues.text(request.getStudentEmail()));
         entity.setStudentLevel(request.getStudentLevel());
         entity.setStudentDepartment(department);
         if (request.getStudentProgramId() != null) {
@@ -72,7 +72,7 @@ public class StudentServiceImpl implements StudentService {
         }
         Student saved = studentRepository.save(entity);
         activityService.record(ActivityEnum.ActivityType.STUDENT_CREATED, "New student added",
-                ActivityServiceImpl.label(saved.getStudentFirstName(), saved.getStudentLastName()) + " was added");
+                saved.displayName() + " was added");
         CreateStudentResponse response = new CreateStudentResponse();
         CreateStudentResponse.Data responseData = new CreateStudentResponse.Data();
         responseData.setStudent(studentMapper.toResponse(saved));
@@ -208,9 +208,10 @@ public class StudentServiceImpl implements StudentService {
                 student.setSchool(school);
                 student.setStudentMatriculationNumber(row.getStudentMatriculationNumber().trim());
             }
-            student.setStudentFirstName(row.getStudentFirstName().trim());
-            student.setStudentLastName(row.getStudentLastName().trim());
-            student.setStudentEmail(row.getStudentEmail().trim());
+            // A blank cell clears, so a school can strip details it uploaded earlier; a missing column keeps them.
+            BulkValues.applyClearable(row.getStudentFirstName(), student::setStudentFirstName);
+            BulkValues.applyClearable(row.getStudentLastName(), student::setStudentLastName);
+            BulkValues.applyClearable(row.getStudentEmail(), student::setStudentEmail);
             student.setStudentLevel(level);
 
             if (program != null) {

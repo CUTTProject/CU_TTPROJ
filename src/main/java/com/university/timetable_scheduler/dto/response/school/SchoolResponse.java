@@ -16,6 +16,8 @@ public class SchoolResponse {
     private SchoolEnum.SchoolStatus schoolStatus;
     private String schoolDayStartHour;
     private String schoolDayEndHour;
+    private String schoolBreakStartHour;
+    private String schoolBreakEndHour;
 
 
 

@@ -7,8 +7,6 @@ import com.university.timetable_scheduler.entity.Program;
 import org.mapstruct.*;
 
 import java.util.List;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 @Mapper(componentModel = "spring", unmappedTargetPolicy = ReportingPolicy.ERROR)
 public interface ProgramMapper {
@@ -27,16 +25,9 @@ public interface ProgramMapper {
             unmappedTargetPolicy = ReportingPolicy.IGNORE)
     void updateDtoToEntity(UpdateProgramRequest request, @MappingTarget Program program);
 
-    /** Joins whichever name parts the coordinator actually has. */
+    /** The coordinator's name, or staff number when the school supplied no name. */
     default String coordinatorName(Program program) {
         Lecturer coordinator = program == null ? null : program.getProgramCoordinator();
-        if (coordinator == null) {
-            return null;
-        }
-        String name = Stream.of(coordinator.getLecturerFirstName(), coordinator.getLecturerLastName())
-                .filter(part -> part != null && !part.isBlank())
-                .map(String::trim)
-                .collect(Collectors.joining(" "));
-        return name.isEmpty() ? null : name;
+        return coordinator == null ? null : coordinator.displayName();
     }
 }

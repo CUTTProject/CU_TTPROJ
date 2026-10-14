@@ -21,6 +21,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.time.LocalTime;
 import java.util.List;
 import java.util.UUID;
 
@@ -37,10 +38,8 @@ public class SchoolServiceImpl implements SchoolService {
 
     @Override
     public CreateSchoolResponse createSchool(CreateSchoolRequest request) {
-        if (!request.getSchoolDayStartHour().isBefore(request.getSchoolDayEndHour())) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                    "schoolDayStartHour must be before schoolDayEndHour");
-        }
+        validateSchoolDay(request.getSchoolDayStartHour(), request.getSchoolDayEndHour(),
+                request.getSchoolBreakStartHour(), request.getSchoolBreakEndHour());
         ensureUnique(schoolRepository.existsBySchoolName(request.getSchoolName()), "name");
         ensureUnique(schoolRepository.existsBySchoolAdminEmail(request.getSchoolAdminEmail()), "admin email");
         ensureUnique(schoolRepository.existsBySchoolAddress(request.getSchoolAddress()), "address");
@@ -53,12 +52,38 @@ public class SchoolServiceImpl implements SchoolService {
         entity.setSchoolPhone(request.getSchoolPhone());
         entity.setSchoolDayStartHour(request.getSchoolDayStartHour());
         entity.setSchoolDayEndHour(request.getSchoolDayEndHour());
+        entity.setSchoolBreakStartHour(request.getSchoolBreakStartHour());
+        entity.setSchoolBreakEndHour(request.getSchoolBreakEndHour());
         School saved = schoolRepository.save(entity);
         CreateSchoolResponse response = new CreateSchoolResponse();
         CreateSchoolResponse.Data data = new CreateSchoolResponse.Data();
         data.setSchool(schoolMapper.toResponse(saved));
         response.setData(data);
         return response;
+    }
+
+    /**
+     * The day must start before it ends, and the break must start before it ends and fall within
+     * the day. A school predating breaks may have neither break hour; setting one needs the other.
+     */
+    private void validateSchoolDay(LocalTime dayStart, LocalTime dayEnd, LocalTime breakStart, LocalTime breakEnd) {
+        if (!dayStart.isBefore(dayEnd)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "schoolDayStartHour must be before schoolDayEndHour");
+        }
+        if (breakStart == null && breakEnd == null) return;
+        if (breakStart == null || breakEnd == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "schoolBreakStartHour and schoolBreakEndHour must be given together");
+        }
+        if (!breakStart.isBefore(breakEnd)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "schoolBreakStartHour must be before schoolBreakEndHour");
+        }
+        if (breakStart.isBefore(dayStart) || breakEnd.isAfter(dayEnd)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "The break must fall between schoolDayStartHour and schoolDayEndHour");
+        }
     }
 
     /**
@@ -104,11 +129,9 @@ public class SchoolServiceImpl implements SchoolService {
     public UpdateSchoolResponse updateSchool(UpdateSchoolRequest request) {
         School entity = requireOwnSchool(request.getId());
         schoolMapper.updateDtoToEntity(request, entity);
-        // Checked after merging, since either hour may have been left as it was.
-        if (!entity.getSchoolDayStartHour().isBefore(entity.getSchoolDayEndHour())) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                    "schoolDayStartHour must be before schoolDayEndHour");
-        }
+        // Checked after merging, since any hour may have been left as it was.
+        validateSchoolDay(entity.getSchoolDayStartHour(), entity.getSchoolDayEndHour(),
+                entity.getSchoolBreakStartHour(), entity.getSchoolBreakEndHour());
         UpdateSchoolResponse response = new UpdateSchoolResponse();
         UpdateSchoolResponse.Data data = new UpdateSchoolResponse.Data();
         data.setSchool(schoolMapper.toResponse(entity));

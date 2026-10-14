@@ -10,6 +10,7 @@ import java.util.List;
 public interface StudentMapper {
     @Mapping(source = "studentDepartment.id", target = "studentDepartmentId")
     @Mapping(source = "studentProgram.id", target = "studentProgramId")
+    @Mapping(target = "studentDisplayName", expression = "java(student.displayName())")
     StudentResponse toResponse(Student student);
 
     List<StudentResponse> toResponseList(List<Student> students);

@@ -210,9 +210,8 @@ public class TimetableServiceImpl implements TimetableService {
         Map<UUID, String> sectionLecturerName = new HashMap<>();
         sectionLecturerRepository.findAllBySchool_Id(schoolId).forEach(sl -> {
             if (sl.getSectionLecturerSection() != null && sl.getSectionLecturerLecturer() != null) {
-                Lecturer lec = sl.getSectionLecturerLecturer();
-                String name = trim(lec.getLecturerFirstName()) + " " + trim(lec.getLecturerLastName());
-                sectionLecturerName.put(sl.getSectionLecturerSection().getId(), name.trim());
+                sectionLecturerName.put(sl.getSectionLecturerSection().getId(),
+                        sl.getSectionLecturerLecturer().displayName());
             }
         });
 
@@ -325,7 +324,11 @@ public class TimetableServiceImpl implements TimetableService {
         return first.getTimeslotEndTime() != null ? first.getTimeslotEndTime().toString() : null;
     }
 
-    /** Seeds Mon–Fri 1-hour slots across the school's day, only if it has none. */
+    /**
+     * Seeds Mon–Fri 1-hour slots across the school's day, only if it has none. Slots run from the
+     * day's start up to the break and resume when it ends; a remainder shorter than an hour is left
+     * unallocated.
+     */
     private void seedDefaultTimeslotsIfAbsent(UUID schoolId) {
         if (timeslotRepository.countBySchool_Id(schoolId) > 0) return;
 
@@ -341,20 +344,28 @@ public class TimetableServiceImpl implements TimetableService {
         };
 
         for (TimeslotEnum.TimeslotDay day : weekdays) {
-            for (int hour = school.getSchoolDayStartHour().getHour(); hour < school.getSchoolDayEndHour().getHour(); hour++) {
-                slots.add(buildTimeslot(day, hour, hour + 1, school));
+            LocalTime start = school.getSchoolDayStartHour();
+            while (!start.plusHours(1).isAfter(school.getSchoolDayEndHour())
+                    && start.plusHours(1).isAfter(start)) {  // guards wrapping past midnight
+                LocalTime end = start.plusHours(1);
+                if (school.overlapsBreak(start, end)) {
+                    start = school.getSchoolBreakEndHour();
+                    continue;
+                }
+                slots.add(buildTimeslot(day, start, end, school));
+                start = end;
             }
         }
 
         timeslotRepository.saveAll(slots);
     }
 
-    private Timeslot buildTimeslot(TimeslotEnum.TimeslotDay day, int startHour, int endHour, School school) {
+    private Timeslot buildTimeslot(TimeslotEnum.TimeslotDay day, LocalTime start, LocalTime end, School school) {
         Timeslot ts = new Timeslot();
         ts.setSchool(school);
         ts.setTimeslotDay(day);
-        ts.setTimeslotStartTime(LocalTime.of(startHour, 0));
-        ts.setTimeslotEndTime(LocalTime.of(endHour, 0));
+        ts.setTimeslotStartTime(start);
+        ts.setTimeslotEndTime(end);
         ts.setTimeslotDuration(Duration.ofHours(1));
         return ts;
     }
@@ -376,9 +387,8 @@ public class TimetableServiceImpl implements TimetableService {
         Map<UUID, String> sectionLecturerName = new HashMap<>();
         sectionLecturerRepository.findAllBySchool_Id(schoolId).forEach(sl -> {
             if (sl.getSectionLecturerSection() != null && sl.getSectionLecturerLecturer() != null) {
-                Lecturer lec = sl.getSectionLecturerLecturer();
-                String name = trim(lec.getLecturerFirstName()) + " " + trim(lec.getLecturerLastName());
-                sectionLecturerName.put(sl.getSectionLecturerSection().getId(), name.trim());
+                sectionLecturerName.put(sl.getSectionLecturerSection().getId(),
+                        sl.getSectionLecturerLecturer().displayName());
             }
         });
 
@@ -467,7 +477,6 @@ public class TimetableServiceImpl implements TimetableService {
         return new Cell().add(new Paragraph(text).setFontSize(8));
     }
     private static String nullSafe(String s) { return s != null ? s : "-"; }
-    private static String trim(String s)     { return s != null ? s : ""; }
 
     /**
      * Graphviz DOT of the conflict graph — red = same lecturer, orange = overlapping students.

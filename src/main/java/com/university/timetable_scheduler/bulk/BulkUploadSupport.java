@@ -192,9 +192,14 @@ public class BulkUploadSupport {
                 report.submitted(1);
 
                 Map<String, String> values = new LinkedHashMap<>();
-                for (int i = 0; i < Math.min(line.length, columns.length); i++) {
-                    if (columns[i] != null && !BulkValues.isBlank(line[i])) {
-                        values.put(columns[i].getName(), line[i].trim());
+                for (int i = 0; i < columns.length; i++) {
+                    if (columns[i] == null) continue;
+                    // A short line leaves its trailing cells blank, so they count as given.
+                    String cell = i < line.length ? line[i] : null;
+                    if (!BulkValues.isBlank(cell)) {
+                        values.put(columns[i].getName(), cell.trim());
+                    } else if (columns[i].isAnnotationPresent(Clearable.class)) {
+                        values.put(columns[i].getName(), "");
                     }
                 }
                 try {

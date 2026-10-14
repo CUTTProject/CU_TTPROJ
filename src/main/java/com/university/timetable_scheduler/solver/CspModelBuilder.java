@@ -2,6 +2,7 @@ package com.university.timetable_scheduler.solver;
 
 import com.university.timetable_scheduler.entity.Event;
 import com.university.timetable_scheduler.entity.Room;
+import com.university.timetable_scheduler.entity.School;
 import com.university.timetable_scheduler.entity.Section;
 import com.university.timetable_scheduler.entity.Timeslot;
 import com.university.timetable_scheduler.repository.*;
@@ -30,6 +31,7 @@ public class CspModelBuilder {
 
     private final EventRepository eventRepository;
     private final TimeslotRepository timeslotRepository;
+    private final SchoolRepository schoolRepository;
     private final RoomRepository roomRepository;
     private final SectionRepository sectionRepository;
     private final SectionRoomRepository sectionRoomRepository;
@@ -78,12 +80,19 @@ public class CspModelBuilder {
     // §1 — Timeslots
     // ─────────────────────────────────────────────────────────────────────────────
 
-    /** Timeslots missing a day or either time cannot be reasoned about, so they are dropped. */
+    /**
+     * Timeslots missing a day or either time cannot be reasoned about, so they are dropped. So are
+     * those overlapping the school's daily break — including slots created by hand, by a section
+     * upload, or seeded before the break was set — so nothing is ever allocated during it.
+     */
     private List<Timeslot> usableTimeslots(UUID schoolId) {
+        Optional<School> school = schoolRepository.findLiveById(schoolId);
         return timeslotRepository.findAllBySchool_Id(schoolId).stream()
                 .filter(t -> t.getTimeslotDay() != null
                         && t.getTimeslotStartTime() != null
                         && t.getTimeslotEndTime() != null)
+                .filter(t -> school.map(s -> !s.overlapsBreak(t.getTimeslotStartTime(), t.getTimeslotEndTime()))
+                        .orElse(true))
                 .toList();
     }
 

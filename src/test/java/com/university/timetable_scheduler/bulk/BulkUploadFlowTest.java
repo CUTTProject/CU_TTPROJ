@@ -11,6 +11,7 @@ import com.university.timetable_scheduler.entity.School;
 import com.university.timetable_scheduler.entity.Section;
 import com.university.timetable_scheduler.entity.SectionLecturer;
 import com.university.timetable_scheduler.entity.Student;
+import com.university.timetable_scheduler.mapper.StudentMapper;
 import com.university.timetable_scheduler.repository.*;
 import com.university.timetable_scheduler.service.impl.*;
 import com.university.timetable_scheduler.status.CourseEnum;
@@ -61,6 +62,7 @@ class BulkUploadFlowTest {
     @Autowired private EnrollmentRepository enrollmentRepository;
     @Autowired private ProgramCourseRepository programCourseRepository;
     @Autowired private TransactionTemplate transactionTemplate;
+    @Autowired private StudentMapper studentMapper;
 
     private School school;
     private AcademicPeriod period;
@@ -187,6 +189,74 @@ class BulkUploadFlowTest {
                 """), period.getId(), false);
         assertThat(again.getData().getUnchanged()).isEqualTo(1);
         assertThat(again.getData().getCreated()).isZero();
+    }
+
+    @Test
+    @DisplayName("names are optional: without them people are shown by matriculation or staff number")
+    void namesAreOptional() {
+        departmentService.bulkUploadDepartments(csv("""
+                departmentCode,departmentName
+                CSC,Computer Science
+                """), false);
+        BulkUploadResponse lecturers = lecturerService.bulkUploadLecturers(csv("""
+                lecturerStaffNumber,departmentCode
+                STF9,CSC
+                """), false);
+        assertThat(lecturers.getData().getErrors()).isEmpty();
+        assertThat(lecturers.getData().getCreated()).isEqualTo(1);
+
+        BulkUploadResponse students = studentService.bulkUploadStudents(csv("""
+                studentMatriculationNumber,studentFirstName,studentLastName,studentEmail,studentLevel,departmentCode
+                M900,,,,100,CSC
+                M901,Chidi,Eze,chidi@uni.test,100,CSC
+                """), false);
+        assertThat(students.getData().getErrors()).isEmpty();
+        assertThat(students.getData().getCreated()).isEqualTo(2);
+
+        assertThat(studentMapper.toResponse(studentRepository
+                .findByMatriculationNumberForTenant("M900", school.getId()).orElseThrow())
+                .getStudentDisplayName()).isEqualTo("M900");
+        assertThat(studentRepository.findByMatriculationNumberForTenant("M901", school.getId())
+                .orElseThrow().displayName()).isEqualTo("Chidi Eze");
+
+        // Leaving the columns out keeps what was stored.
+        studentService.bulkUploadStudents(csv("""
+                studentMatriculationNumber,studentLevel,departmentCode
+                M901,200,CSC
+                """), false);
+        Student kept = studentRepository.findByMatriculationNumberForTenant("M901", school.getId()).orElseThrow();
+        assertThat(kept.displayName()).isEqualTo("Chidi Eze");
+        assertThat(kept.getStudentEmail()).isEqualTo("chidi@uni.test");
+
+        // Blank cells strip it.
+        studentService.bulkUploadStudents(csv("""
+                studentMatriculationNumber,studentFirstName,studentLastName,studentEmail,studentLevel,departmentCode
+                M901,,,,100,CSC
+                """), false);
+        Student stripped = studentRepository.findByMatriculationNumberForTenant("M901", school.getId()).orElseThrow();
+        assertThat(stripped.getStudentFirstName()).isNull();
+        assertThat(stripped.getStudentLastName()).isNull();
+        assertThat(stripped.getStudentEmail()).isNull();
+        assertThat(stripped.displayName()).isEqualTo("M901");
+    }
+
+    @Test
+    @DisplayName("a section timeslot overlapping the school's break rejects the row")
+    void breakTimeslotRejected() {
+        school.setSchoolBreakStartHour(LocalTime.of(12, 0));
+        school.setSchoolBreakEndHour(LocalTime.of(13, 0));
+        school = schoolRepository.save(school);
+        uploadMasterData();
+
+        BulkUploadResponse sections = sectionService.bulkUploadSections(csv("""
+                courseCode,sectionName,sectionEnrollmentSize,lecturerStaffNumbers,eventDurationMinutes,eventType,rooms,timeslot
+                CSC101,A,40,STF1,60,CLASS,LT1,M(11:00-12:00)
+                MTH101,A,40,STF2,60,CLASS,LT1,M(12:30-13:30)
+                """), period.getId(), false);
+        assertThat(sections.getData().getCreated()).isEqualTo(1);
+        assertThat(sections.getData().getErrors())
+                .extracting(BulkUploadResponse.RowIssue::getRow, BulkUploadResponse.RowIssue::getColumn)
+                .containsExactly(org.assertj.core.groups.Tuple.tuple(3, "timeslot"));
     }
 
     @Test

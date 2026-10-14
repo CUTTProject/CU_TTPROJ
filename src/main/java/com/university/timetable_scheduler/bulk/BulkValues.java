@@ -29,6 +29,14 @@ public final class BulkValues {
     }
 
     /**
+     * Applies a {@link Clearable} field: {@code null} (not supplied) keeps the stored value,
+     * blank clears it, anything else is stored trimmed.
+     */
+    public static void applyClearable(String raw, java.util.function.Consumer<String> setter) {
+        if (raw != null) setter.accept(text(raw));
+    }
+
+    /**
      * Indexes existing rows by {@link #key} of the given field, skipping rows without one. When
      * two rows share a key the first wins, matching what the old uploads did.
      */

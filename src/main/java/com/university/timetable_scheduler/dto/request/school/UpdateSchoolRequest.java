@@ -18,4 +18,7 @@ public class UpdateSchoolRequest {
     /** Optional; a blank one keeps the stored hour. The day must still start before it ends. */
     private LocalTime schoolDayStartHour;
     private LocalTime schoolDayEndHour;
+    /** Optional, like the day hours. The break must still fall within the school day. */
+    private LocalTime schoolBreakStartHour;
+    private LocalTime schoolBreakEndHour;
 }

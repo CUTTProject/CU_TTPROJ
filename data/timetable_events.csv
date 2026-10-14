@@ -1,0 +1,135 @@
+courseCode,courseTitle,courseUnit,courseLevel,department,lecturerStaffNumber,lecturerFirstName,lecturerLastName,lecturerEmail,sectionName,sectionEnrollmentSize,eventDurationMinutes,eventType
+CSC 101,Introduction to Computer Sciences,3,LEVEL_100,Computer Science,L001,Chukwudi,Eze,c.eze@uni.edu,CSC 101-CSC,55,180,LAB
+PAU-CSC 111,Introduction to Software Packages,3,LEVEL_100,Computer Science,L002,Onyinye,Okonkwo,o.okonkwo@uni.edu,PAU-CSC 111-CSC,55,180,LAB
+MTH 101,Elementary Mathematics I,2,LEVEL_100,Computer Science,L005,Tunde,Afolabi,t.afolabi@uni.edu,MTH 101-CSC,55,120,CLASS
+PHY 101,General Physics I,2,LEVEL_100,Computer Science,L006,Musa,Abdullahi,m.abdullahi@uni.edu,PHY 101-CSC,55,120,CLASS
+PHY 107,General Practical Physics I,3,LEVEL_100,Computer Science,L006,Musa,Abdullahi,m.abdullahi@uni.edu,PHY 107-CSC,55,180,LAB
+STA 111,Descriptive Statistics,3,LEVEL_100,Computer Science,L007,Amaka,Eze,a.eze@uni.edu,STA 111-CSC,55,180,CLASS
+PAU-CSC 192,Introduction to Christian Theology,2,LEVEL_100,Computer Science,L008,IOH,Faculty,ioh@uni.edu,PAU-CSC 192,55,120,CLASS
+CSC 201,Computer Programming I,3,LEVEL_200,Computer Science,L009,Nnamdi,Igwe,n.igwe@uni.edu,CSC 201-CSC,50,180,LAB
+MTH 201,Mathematical Methods I,2,LEVEL_200,Computer Science,L010,Segun,Adeyinka,s.adeyinka@uni.edu,MTH 201-CSC,50,120,CLASS
+SEN 201,Introduction to Software Engineering,2,LEVEL_200,Computer Science,L011,Gbenga,Afolabi,g.afolabi@uni.edu,SEN 201-CSC,50,180,LAB
+CSC 203,Discrete Structures,2,LEVEL_200,Computer Science,L012,Kayode,Adebisi,k.adebisi@uni.edu,CSC 203-CSC,50,120,CLASS
+PAU-CSC 211,Computer Hardware and Networking Essentials,3,LEVEL_200,Computer Science,L013,Cisco,Instructor,cisco@uni.edu,PAU-CSC 211,50,180,LAB
+PAU-CSC 292,The Nature of Human Beings,2,LEVEL_200,Computer Science,L008,IOH,Faculty,ioh@uni.edu,PAU-CSC 292,50,120,CLASS
+IFT 211,Digital Logic Design,2,LEVEL_200,Computer Science,L017,Dele,Adegoke,d.adegoke@uni.edu,IFT 211-CSC,50,180,LAB
+GST 212,Logic and Phlisophy,2,LEVEL_200,Computer Science,L008,IOH,Faculty,ioh@uni.edu,GST 212-CSC,50,120,CLASS
+ENT 211,Entrepreneuship,2,LEVEL_200,Computer Science,L016,EDC,Faculty,edc@uni.edu,ENT 211-CSC,50,120,CLASS
+CSC 301,Data Structures,3,LEVEL_300,Computer Science,L009,Nnamdi,Igwe,n.igwe@uni.edu,CSC 301,45,180,LAB
+CSC 308,Operating Systems,3,LEVEL_300,Computer Science,L018,Ifeoma,Chukwu,i.chukwu@uni.edu,CSC 308,45,180,LAB
+CSC 309,Artificial Intelligence,2,LEVEL_300,Computer Science,L020,Hakeem,Lawal,h.lawal@uni.edu,CSC 309,45,180,LAB
+CSC 322,Computer Science Innovation and New Technology,2,LEVEL_300,Computer Science,L018,Ifeoma,Chukwu,i.chukwu@uni.edu,CSC 322,45,180,LAB
+PAU-CSC 312,Compiler Construction,3,LEVEL_300,Computer Science,L011,Gbenga,Afolabi,g.afolabi@uni.edu,PAU-CSC 312,45,180,CLASS
+PAU-CSC 317,Introduction to Numerical Analysis,2,LEVEL_300,Computer Science,L012,Kayode,Adebisi,k.adebisi@uni.edu,PAU-CSC 317,45,120,CLASS
+GST 303,Nigeria Peoples and Culture,2,LEVEL_300,Computer Science,L031,Emeka,Okoye,e.okoye@uni.edu,GST 303-CSC,45,120,CLASS
+GST 312,Peace Studies,2,LEVEL_300,Computer Science,L032,Chibuike,Okafor,ch.okafor@uni.edu,GST 312-CSC,45,120,CLASS
+CSC 401,Research Methodology and Technical Report Writing,3,LEVEL_400,Computer Science,L023,Kunle,Adebisi,ku.adebisi@uni.edu,CSC 401,40,180,CLASS
+CSC 403,Database Management II,3,LEVEL_400,Computer Science,L024,Ayo,Oladipo,a.oladipo@uni.edu,CSC 403,40,180,LAB
+CSC 405,Software Engineering,3,LEVEL_400,Computer Science,L025,Adeola,Ogundimu,a.ogundimu@uni.edu,CSC 405,40,180,LAB
+CSC 409,Human Computer Interface,2,LEVEL_400,Computer Science,L020,Hakeem,Lawal,h.lawal@uni.edu,CSC 409,40,180,LAB
+CSC 413,Distributed Computing System,3,LEVEL_400,Computer Science,L025,Adeola,Ogundimu,a.ogundimu@uni.edu,CSC 413,40,180,LAB
+CSC 419,"Advances in Web, Mobile and Blockchain Development",3,LEVEL_400,Computer Science,L018,Ifeoma,Chukwu,i.chukwu@uni.edu,CSC 419,40,180,LAB
+CSC 421,Introduction to Data Science and Engineering,3,LEVEL_400,Computer Science,L023,Kunle,Adebisi,ku.adebisi@uni.edu,CSC 421,40,180,LAB
+EEE 102,Introduction to Electrical and Electronic Engineering,2,LEVEL_100,Electrical and Electronics Engineering,L034,Uche,Okonkwo,u.okonkwo@uni.edu,EEE 102,55,120,CLASS
+GET 101,Engineer in Society,1,LEVEL_100,Electrical and Electronics Engineering,L035,Segun,Olawale,s.olawale@uni.edu,GET 101-EEE,55,60,CLASS
+CHM 101,General Chemistry I,2,LEVEL_100,Electrical and Electronics Engineering,L036,Amaka,Nwachukwu,a.nwachukwu@uni.edu,CHM 101-EEE,55,120,CLASS
+CHM 107,General Practical Chemistry I,3,LEVEL_100,Electrical and Electronics Engineering,L036,Amaka,Nwachukwu,a.nwachukwu@uni.edu,CHM 107-EEE,55,180,LAB
+MTH 101,Elementary Mathematics I (Algebra & Trigonometry),2,LEVEL_100,Electrical and Electronics Engineering,L037,Chidinma,Eze,ch.eze@uni.edu,MTH 101-EEE,55,120,CLASS
+PHY 101,General Physics I (Mechanics),2,LEVEL_100,Electrical and Electronics Engineering,L038,Lekan,Aribisala,l.aribisala@uni.edu,PHY 101-EEE,55,120,CLASS
+PHY 102,General Physics II (Behaviour of Matter),2,LEVEL_100,Electrical and Electronics Engineering,L038,Lekan,Aribisala,l.aribisala@uni.edu,PHY 102-EEE,55,120,CLASS
+PHY 107,General Practical Physics I,3,LEVEL_100,Electrical and Electronics Engineering,L038,Lekan,Aribisala,l.aribisala@uni.edu,PHY 107-EEE,55,180,LAB
+PAU-EEE 191,Introduction to Christian Theology,2,LEVEL_100,Electrical and Electronics Engineering,L039,Nnamdi,Eze,nm.eze@uni.edu,PAU-EEE 191,55,120,CLASS
+GST 111,Communication in English,2,LEVEL_100,Electrical and Electronics Engineering,L040,Emeka,Okonkwo,em.okonkwo@uni.edu,GST 111-EEE,55,120,CLASS
+GET 201,Applied Electricity I,3,LEVEL_200,Electrical and Electronics Engineering,L034,Uche,Okonkwo,u.okonkwo@uni.edu,GET 201-EEE,50,180,CLASS
+GET 203,Engineering Graphics and Solid Modeling II,2,LEVEL_200,Electrical and Electronics Engineering,L041,Bayo,Adewuyi,b.adewuyi@uni.edu,GET 203-EEE,50,180,LAB
+GET 205,Fundamentals of Fluid Mechanics,3,LEVEL_200,Electrical and Electronics Engineering,L042,Chidi,Okonkwo,chi.okonkwo@uni.edu,GET 205-EEE,50,180,CLASS
+GET 207,Applied Mechanics,3,LEVEL_200,Electrical and Electronics Engineering,L043,Femi,Olawale,fe.olawale@uni.edu,GET 207-EEE,50,180,CLASS
+GET 209,Engineering Mathematics I,3,LEVEL_200,Electrical and Electronics Engineering,L044,Babatunde,Fasanya,b.fasanya@uni.edu,GET 209-EEE,50,180,CLASS
+GET 211,Computing & Software Engineering,3,LEVEL_200,Electrical and Electronics Engineering,L045,Yemi,Olatunji,y.olatunji@uni.edu,GET 211-EEE,50,180,LAB
+EEE 204,Electrical Engineering Materials,3,LEVEL_200,Electrical and Electronics Engineering,L046,Kayode,Adesanya,k.adesanya@uni.edu,EEE 204,50,180,CLASS
+ENT 211,Entrepreneurship and Innovation,2,LEVEL_200,Electrical and Electronics Engineering,L047,Nneka,Okafor,n.okafor@uni.edu,ENT 211-EEE,50,120,CLASS
+PAU-EEE 292,The Nature of Human Beings,2,LEVEL_200,Electrical and Electronics Engineering,L033,Folake,Adeyemi,f.adeyemi@uni.edu,PAU-EEE 292,50,120,CLASS
+GST 212,"Philosophy, Logic and Human Existence",2,LEVEL_200,Electrical and Electronics Engineering,L032,Chibuike,Okafor,ch.okafor@uni.edu,GST 212-EEE,50,120,CLASS
+EEE 321,Analogue Electronic Circuits,2,LEVEL_300,Electrical and Electronics Engineering,L045,Yemi,Olatunji,y.olatunji@uni.edu,EEE 321,45,120,CLASS
+EEE 311,Electric Circuit Theory I,2,LEVEL_300,Electrical and Electronics Engineering,L048,Chimezie,Onyekwere,c.onyekwere@uni.edu,EEE 311,45,120,CLASS
+PAU-EEE 313,Laboratory Practicals I,2,LEVEL_300,Electrical and Electronics Engineering,L045,Yemi,Olatunji,y.olatunji@uni.edu,PAU-EEE 313,45,180,LAB
+PAU-EEE 311,Electromechanical Systems,2,LEVEL_300,Electrical and Electronics Engineering,L034,Uche,Okonkwo,u.okonkwo@uni.edu,PAU-EEE 311,45,120,CLASS
+GET 301,Engineering Mathematics III,3,LEVEL_300,Electrical and Electronics Engineering,L049,Ovie,Eruotor,o.eruotor@uni.edu,GET 301-EEE,45,180,CLASS
+GET 305,Engineering Statistics & Data Analytics,3,LEVEL_300,Electrical and Electronics Engineering,L049,Ovie,Eruotor,o.eruotor@uni.edu,GET 305-EEE,45,180,CLASS
+GET 306,Renewable Energy Systems & Technologies,3,LEVEL_300,Electrical and Electronics Engineering,L050,Obinna,Ugwu,o.ugwu@uni.edu,GET 306-EEE,45,180,CLASS
+GST 312,Peace & Conflict Resolution,2,LEVEL_300,Electrical and Electronics Engineering,L030,Rotimi,Fashola,r.fashola@uni.edu,GST 312-EEE,45,120,CLASS
+GST 303,Nigeria Peoples and Culture,2,LEVEL_300,Electrical and Electronics Engineering,L031,Emeka,Okoye,e.okoye@uni.edu,GST 303-EEE,45,120,CLASS
+PAU-MEE 402,Engineering Economics,2,LEVEL_400,Electrical and Electronics Engineering,L035,Segun,Olawale,s.olawale@uni.edu,PAU-MEE 402-EEE,40,120,CLASS
+PAU-EEE 403,Principles of Communication Engineering,2,LEVEL_400,Electrical and Electronics Engineering,L017,Dele,Adegoke,d.adegoke@uni.edu,PAU-EEE 403,40,120,CLASS
+PAU-EEE 405,Electric Power Systems,2,LEVEL_400,Electrical and Electronics Engineering,L046,Kayode,Adesanya,k.adesanya@uni.edu,PAU-EEE 405,40,120,CLASS
+PAU-EEE 407,Introduction to Control Systems Engineering,3,LEVEL_400,Electrical and Electronics Engineering,L045,Yemi,Olatunji,y.olatunji@uni.edu,PAU-EEE 407,40,180,CLASS
+PAU-EEE 409,Power Electronics & Drives,2,LEVEL_400,Electrical and Electronics Engineering,L046,Kayode,Adesanya,k.adesanya@uni.edu,PAU-EEE 409,40,120,CLASS
+PAU-EEE 411,Laboratory Practicals III,2,LEVEL_400,Electrical and Electronics Engineering,L055,Chukwuemeka,Obiora,c.obiora@uni.edu,PAU-EEE 411,40,180,LAB
+EEE 593,Final Year Project I,3,LEVEL_500,Electrical and Electronics Engineering,L034,Uche,Okonkwo,u.okonkwo@uni.edu,EEE 593,25,180,CLASS
+GET 501,Engineering Project Management,3,LEVEL_500,Electrical and Electronics Engineering,L053,Ifeanyi,Nwosu,if.nwosu@uni.edu,GET 501-EEE,25,180,CLASS
+GST 111,Communication in English,2,LEVEL_100,Mechatronics Engineering,L040,Emeka,Okonkwo,em.okonkwo@uni.edu,GST 111-MEC,55,120,CLASS
+MTH 101,Elementary Mathematics I (Algebra & Trigonometry),2,LEVEL_100,Mechatronics Engineering,L037,Chidinma,Eze,ch.eze@uni.edu,MTH 101-MEC,55,120,CLASS
+GET 101,Engineer in Society,1,LEVEL_100,Mechatronics Engineering,L035,Segun,Olawale,s.olawale@uni.edu,GET 101-MEC,55,60,CLASS
+CHM 101,General Chemistry I (Physical),2,LEVEL_100,Mechatronics Engineering,L036,Amaka,Nwachukwu,a.nwachukwu@uni.edu,CHM 101-MEC,55,120,CLASS
+PHY 101,General Physics I (Mechanics),2,LEVEL_100,Mechatronics Engineering,L068,Bola,Adeyemi,bo.adeyemi@uni.edu,PHY 101-MEC,55,120,CLASS
+PHY 102,General Physics II (Behaviour of Matter),2,LEVEL_100,Mechatronics Engineering,L069,Olumide,Adeyemi,ol.adeyemi@uni.edu,PHY 102-MEC,55,120,CLASS
+CHM 107,General Practical Chemistry I,3,LEVEL_100,Mechatronics Engineering,L064,Tunde,Staff,t.staff@uni.edu,CHM 107-MEC,55,180,LAB
+PHY 107,General Practical Physics I,1,LEVEL_100,Mechatronics Engineering,L065,Lanre,Staff,l.staff@uni.edu,PHY 107-MEC,55,180,LAB
+PAU,Introduction to Christian Theology,2,LEVEL_100,Mechatronics Engineering,L039,Nnamdi,Eze,nm.eze@uni.edu,PAU-MCT,55,120,CLASS
+MCT 102,Introduction to Mechanical Engineering,2,LEVEL_100,Mechatronics Engineering,L054,Emeka,Oduya,e.oduya@uni.edu,MCT 102,55,180,LAB
+GST 111,Communication in English,2,LEVEL_100,Mechanical Engineering,L008,IOH,Faculty,ioh@uni.edu,GST 111-MEE,55,120,CLASS
+MTH 101,Elementary Mathematics I (Algebra & Trigonometry),2,LEVEL_100,Mechanical Engineering,L037,Chidinma,Eze,ch.eze@uni.edu,MTH 101-MEE,55,120,CLASS
+GET 101,Engineer in Society,1,LEVEL_100,Mechanical Engineering,L035,Segun,Olawale,s.olawale@uni.edu,GET 101-MEE,55,60,CLASS
+CHM 101,General Chemistry I (Physical),2,LEVEL_100,Mechanical Engineering,L036,Amaka,Nwachukwu,a.nwachukwu@uni.edu,CHM 101-MEE,55,120,CLASS
+PHY 101,General Physics I (Mechanics),2,LEVEL_100,Mechanical Engineering,L068,Bola,Adeyemi,bo.adeyemi@uni.edu,PHY 101-MEE,55,120,CLASS
+PHY 102,General Physics II (Behaviour of Matter),3,LEVEL_100,Mechanical Engineering,L069,Olumide,Adeyemi,ol.adeyemi@uni.edu,PHY 102-MEE,55,180,CLASS
+CHM 107,General Practical Chemistry I,3,LEVEL_100,Mechanical Engineering,L036,Amaka,Nwachukwu,a.nwachukwu@uni.edu,CHM 107-MEE,55,180,LAB
+PHY 107,General Practical Physics I,3,LEVEL_100,Mechanical Engineering,L038,Lekan,Aribisala,l.aribisala@uni.edu,PHY 107-MEE,55,180,LAB
+PAU-MEE 192,Introduction to Christian Theology,2,LEVEL_100,Mechanical Engineering,L070,Onyekachi,Obi,on.obi@uni.edu,PAU-MEE 192,55,120,CLASS
+MEE 101,Introduction to Mechanical Engineering,2,LEVEL_100,Mechanical Engineering,L052,Biodun,Afolabi,bi.afolabi@uni.edu,MEE 101,55,120,CLASS
+GET 201,Applied Electricity I,3,LEVEL_200,Mechanical Engineering,L034,Uche,Okonkwo,u.okonkwo@uni.edu,GET 201-MEE,50,180,LAB
+GET 207,Applied Mechanics I,3,LEVEL_200,Mechanical Engineering,L043,Femi,Olawale,fe.olawale@uni.edu,GET 207-MEE,50,180,LAB
+GET 211,Computing and Software Engineering,3,LEVEL_200,Mechanical Engineering,L071,Oluwaseun,Adebayo,ol.adebayo@uni.edu,GET 211-MEE,50,180,LAB
+GET 203,Engineering Graphics and Solid Modelling II,2,LEVEL_200,Mechanical Engineering,L041,Bayo,Adewuyi,b.adewuyi@uni.edu,GET 203-MEE,50,180,LAB
+GET 209,Engineering Mathematics I,3,LEVEL_200,Mechanical Engineering,L044,Babatunde,Fasanya,b.fasanya@uni.edu,GET 209-MEE,50,180,CLASS
+ENT 211,Entrepreneurship and Innovation,2,LEVEL_200,Mechanical Engineering,L016,EDC,Faculty,edc@uni.edu,ENT 211-MEE,50,120,CLASS
+GET 205,Fundamentals of Fluid Mechanics,3,LEVEL_200,Mechanical Engineering,L042,Chidi,Okonkwo,chi.okonkwo@uni.edu,GET 205-MEE,50,180,CLASS
+PAU-MEE 292,The Nature of Human Beings,2,LEVEL_200,Mechanical Engineering,L033,Folake,Adeyemi,f.adeyemi@uni.edu,PAU-MEE 292,50,120,CLASS
+GST 212,Logic and Philosophy,2,LEVEL_200,Mechanical Engineering,L072,Obinna,Nwosu,ob.nwosu@uni.edu,GST 212-MEE,50,120,CLASS
+PAU-MEE 315,Control Systems Engineering,3,LEVEL_300,Mechanical Engineering,L044,Babatunde,Fasanya,b.fasanya@uni.edu,PAU-MEE 315,45,180,LAB
+PAU-MEE 331,Engineering Graphics and Solid Modelling III,2,LEVEL_300,Mechanical Engineering,L053,Ifeanyi,Nwosu,if.nwosu@uni.edu,PAU-MEE 331,45,180,LAB
+GET 301,Engineering Mathematics III,3,LEVEL_300,Mechanical Engineering,L049,Ovie,Eruotor,o.eruotor@uni.edu,GET 301-MEE,45,180,CLASS
+GET 305,Engineering Statistics and Data Analytics,3,LEVEL_300,Mechanical Engineering,L049,Ovie,Eruotor,o.eruotor@uni.edu,GET 305-MEE,45,180,CLASS
+PAU-MEE 313,Manufacturing and Engineering Technology,2,LEVEL_300,Mechanical Engineering,L073,Femi,Adeyemi,fe.adeyemi@uni.edu,PAU-MEE 313,45,180,LAB
+PAU-MCTE 302,Introduction To Robotics,2,LEVEL_300,Mechanical Engineering,L054,Emeka,Oduya,e.oduya@uni.edu,PAU-MCTE 302,45,120,CLASS
+GET 306,Renewable Energy Systems & Technologies,3,LEVEL_300,Mechanical Engineering,L050,Obinna,Ugwu,o.ugwu@uni.edu,GET 306-MEE,45,180,CLASS
+GST 303,Nigeria Peoples and Culture,2,LEVEL_300,Mechanical Engineering,L031,Emeka,Okoye,e.okoye@uni.edu,GST 303-MEE,45,120,CLASS
+GST 312,Peace & Conflict Resolution,2,LEVEL_300,Mechanical Engineering,L030,Rotimi,Fashola,r.fashola@uni.edu,GST 312-MEE,45,120,CLASS
+PAU-MEE 307,Theory of Machines I,2,LEVEL_300,Mechanical Engineering,L074,Ikenna,Obi,ik.obi@uni.edu,PAU-MEE 307,45,180,LAB
+MEE 407,Advanced Mechanics of Materials,2,LEVEL_400,Mechanical Engineering,L052,Biodun,Afolabi,bi.afolabi@uni.edu,MEE 407,40,120,CLASS
+MEE 403,Applied (Engineering) Thermodynamics I,2,LEVEL_400,Mechanical Engineering,L042,Chidi,Okonkwo,chi.okonkwo@uni.edu,MEE 403,40,120,CLASS
+PAU-MEE 409,Corrosion Engineering and Protections,2,LEVEL_400,Mechanical Engineering,L043,Femi,Olawale,fe.olawale@uni.edu,PAU-MEE 409,40,120,CLASS
+PAU-MEE 402,Engineering Economics,3,LEVEL_400,Mechanical Engineering,L035,Segun,Olawale,s.olawale@uni.edu,PAU-MEE 402-MEE,40,180,CLASS
+MEE 405,Heat and Mass Transfer,3,LEVEL_400,Mechanical Engineering,L075,Adaeze,Obiechina,a.obiechina@uni.edu,MEE 405,40,180,CLASS
+MEE 401,Mechanical (Machine) Engineering Design II,2,LEVEL_400,Mechanical Engineering,L074,Ikenna,Obi,ik.obi@uni.edu,MEE 401,40,120,CLASS
+MEE 590,B.Eng. Project I,3,LEVEL_500,Mechanical Engineering,L074,Ikenna,Obi,ik.obi@uni.edu,MEE 590,25,180,CLASS
+GET 501,Engineering (Project) Management [PMI],3,LEVEL_500,Mechanical Engineering,L053,Ifeanyi,Nwosu,if.nwosu@uni.edu,GET 501-MEE,25,180,CLASS
+PAU-MEE 517,Industrial Automation and Control,2,LEVEL_500,Mechanical Engineering,L054,Emeka,Oduya,e.oduya@uni.edu,PAU-MEE 517,25,180,LAB
+PAU-MEE 522,Automotive System Design,2,LEVEL_500,Mechanical Engineering,L076,Okechukwu,Njoku,o.njoku@uni.edu,PAU-MEE 522,25,120,CLASS
+COS 101,Introduction to Computer Sciences,3,LEVEL_100,Software Engineering,L001,Chukwudi,Eze,c.eze@uni.edu,COS 101-SEN,55,180,LAB
+PAU-CSC 111,Introduction to Software Packages,3,LEVEL_100,Software Engineering,L002,Onyinye,Okonkwo,o.okonkwo@uni.edu,PAU-CSC 111-SEN,55,180,LAB
+GST 111,Communication in English,2,LEVEL_100,Software Engineering,L008,IOH,Faculty,ioh@uni.edu,GST 111-SEN,55,120,CLASS
+MTH 101,Elementary Mathematics I,2,LEVEL_100,Software Engineering,L005,Tunde,Afolabi,t.afolabi@uni.edu,MTH 101-SEN,55,120,CLASS
+PHY 101,General Physics I,2,LEVEL_100,Software Engineering,L006,Musa,Abdullahi,m.abdullahi@uni.edu,PHY 101-SEN,55,120,CLASS
+PHY 107,General Practical Physics I,1,LEVEL_100,Software Engineering,L006,Musa,Abdullahi,m.abdullahi@uni.edu,PHY 107-SEN,55,180,LAB
+STA 111,Descriptive Statistics,3,LEVEL_100,Software Engineering,L007,Amaka,Eze,a.eze@uni.edu,STA 111-SEN,55,180,CLASS
+PAU-CSC 192,Introduction to Christian Theology,2,LEVEL_100,Software Engineering,L008,IOH,Faculty,ioh@uni.edu,PAU-CSC 192,55,120,CLASS
+CSC 201,Computer Programming I,3,LEVEL_200,Software Engineering,L009,Nnamdi,Igwe,n.igwe@uni.edu,CSC 201-SEN,50,180,LAB
+MTH 201,Mathematical Methods I,3,LEVEL_200,Software Engineering,L010,Segun,Adeyinka,s.adeyinka@uni.edu,MTH 201-SEN,50,180,CLASS
+SEN 201,Introduction to Software Engineering,2,LEVEL_200,Software Engineering,L011,Gbenga,Afolabi,g.afolabi@uni.edu,SEN 201-SEN,50,180,LAB
+CSC 203,Discrete Structures,2,LEVEL_200,Software Engineering,L012,Kayode,Adebisi,k.adebisi@uni.edu,CSC 203-SEN,50,120,CLASS
+PAU-SEN 211,Computer Hardware and Networking Essentials,3,LEVEL_200,Software Engineering,L014,Chukwuka,Obi,ch.obi@uni.edu,PAU-SEN 211,50,180,LAB
+PAU-SEN 292,The Nature of Human Beings,2,LEVEL_200,Software Engineering,L008,IOH,Faculty,ioh@uni.edu,PAU-SEN 292,50,120,CLASS
+IFT 211,Digital Logic Design,2,LEVEL_200,Software Engineering,L017,Dele,Adegoke,d.adegoke@uni.edu,IFT 211-SEN,50,180,LAB
+GST 212,Logic and Phlisophy,2,LEVEL_200,Software Engineering,L008,IOH,Faculty,ioh@uni.edu,GST 212-SEN,50,120,CLASS
+ENT 211,Entrepreneuship,2,LEVEL_200,Software Engineering,L016,EDC,Faculty,edc@uni.edu,ENT 211-SEN,50,120,CLASS

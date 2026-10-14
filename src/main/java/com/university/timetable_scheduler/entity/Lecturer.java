@@ -14,6 +14,7 @@ public class Lecturer extends TenantAwareEntity {
 
     private String lecturerStaffNumber;
 
+    /** Names are optional: a school may identify lecturers by staff number alone. */
     private String lecturerFirstName;
 
     private String lecturerLastName;
@@ -26,6 +27,11 @@ public class Lecturer extends TenantAwareEntity {
 
     @Enumerated(EnumType.STRING)
     private LecturerEnum.LecturerStatus lecturerStatus;
+
+    /** The lecturer's name if the school supplied one, otherwise their staff number. */
+    public String displayName() {
+        return PersonNames.displayName(lecturerStaffNumber, lecturerFirstName, lecturerLastName);
+    }
 
     @PrePersist
     protected void onCreate() {

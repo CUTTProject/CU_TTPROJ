@@ -1,0 +1,38 @@
+roomNumber,roomBuilding,roomCapacity,roomType
+Classroom-1,EEE,50,CLASS
+Classroom-2,EEE,50,CLASS
+Classroom-3,EEE,50,CLASS
+Classroom-4,EEE,50,CLASS
+Classroom-5,EEE,50,CLASS
+Engineering Drawing Studio (EDS),GEN,80,CLASS
+Chemistry Lab,EEE,40,LAB
+Physics & Applied Electricity Lab,EEE,40,LAB
+Central Workshop,EEE,60,LAB
+Electronic & Control Laboratory,EEE,40,LAB
+Classroom-1,CSC,50,CLASS
+Classroom-2,CSC,50,CLASS
+Classroom-3,CSC,50,CLASS
+Classroom-4,CSC,50,CLASS
+Classroom-5,CSC,50,CLASS
+Computer Lab 1,CSC,35,LAB
+Computer Lab 2,CSC,35,LAB
+Classroom-1,SEN,50,CLASS
+Classroom-2,SEN,50,CLASS
+Classroom-3,SEN,50,CLASS
+Classroom-4,SEN,50,CLASS
+Classroom-5,SEN,50,CLASS
+Classroom-1,MEE,50,CLASS
+Classroom-2,MEE,50,CLASS
+Classroom-3,MEE,50,CLASS
+Classroom-4,MEE,50,CLASS
+Classroom-5,MEE,50,CLASS
+Chemistry Lab,MEE,40,LAB
+Electrical Power & Machines Lab,MEE,45,LAB
+Thermofluid Lab,MEE,45,LAB
+Central Workshop,MEE,60,LAB
+Classroom-1,MEC,50,CLASS
+Classroom-2,MEC,50,CLASS
+Classroom-3,MEC,50,CLASS
+Classroom-4,MEC,50,CLASS
+Classroom-5,MEC,50,CLASS
+Robotics & Mechatronics Laboratory,MEC,45,LAB

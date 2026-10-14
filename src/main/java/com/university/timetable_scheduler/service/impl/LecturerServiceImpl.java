@@ -53,13 +53,13 @@ public class LecturerServiceImpl implements LecturerService {
         Lecturer entity = new Lecturer();
         entity.setSchool(currentSchool());
         entity.setLecturerStaffNumber(request.getLecturerStaffNumber());
-        entity.setLecturerFirstName(request.getLecturerFirstName());
-        entity.setLecturerLastName(request.getLecturerLastName());
-        entity.setLecturerEmail(request.getLecturerEmail());
+        entity.setLecturerFirstName(BulkValues.text(request.getLecturerFirstName()));
+        entity.setLecturerLastName(BulkValues.text(request.getLecturerLastName()));
+        entity.setLecturerEmail(BulkValues.text(request.getLecturerEmail()));
         entity.setLecturerDepartment(department);
         Lecturer saved = lecturerRepository.save(entity);
         activityService.record(ActivityEnum.ActivityType.LECTURER_CREATED, "New lecturer added",
-                ActivityServiceImpl.label(saved.getLecturerFirstName(), saved.getLecturerLastName()) + " was added");
+                saved.displayName() + " was added");
         CreateLecturerResponse response = new CreateLecturerResponse();
         CreateLecturerResponse.Data responseData = new CreateLecturerResponse.Data();
         responseData.setLecturer(lecturerMapper.toResponse(saved));
@@ -160,9 +160,10 @@ public class LecturerServiceImpl implements LecturerService {
                 lecturer.setSchool(school);
                 lecturer.setLecturerStaffNumber(row.getLecturerStaffNumber().trim());
             }
-            lecturer.setLecturerFirstName(row.getLecturerFirstName().trim());
-            lecturer.setLecturerLastName(row.getLecturerLastName().trim());
-            lecturer.setLecturerEmail(row.getLecturerEmail().trim());
+            // A blank cell clears, so a school can strip details it uploaded earlier; a missing column keeps them.
+            BulkValues.applyClearable(row.getLecturerFirstName(), lecturer::setLecturerFirstName);
+            BulkValues.applyClearable(row.getLecturerLastName(), lecturer::setLecturerLastName);
+            BulkValues.applyClearable(row.getLecturerEmail(), lecturer::setLecturerEmail);
             lecturer.setLecturerDepartment(department);
 
             toSave.add(lecturer);

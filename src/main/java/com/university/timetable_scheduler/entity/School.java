@@ -6,7 +6,6 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-import java.sql.Time;
 import java.time.LocalTime;
 
 @Entity
@@ -35,6 +34,16 @@ public class School extends BaseEntity {
 
     @Column(nullable = false)
     private LocalTime schoolDayEndHour;
+
+    /**
+     * The daily break, excluded from allocation on every day. Nullable because
+     * {@code ddl-auto=update} adds these to a populated table; new schools must supply both.
+     */
+    @Column
+    private LocalTime schoolBreakStartHour;
+
+    @Column
+    private LocalTime schoolBreakEndHour;
 
     @Enumerated(EnumType.STRING)
     private SchoolEnum.SchoolStatus schoolStatus;
@@ -68,6 +77,12 @@ public class School extends BaseEntity {
      */
     @Column
     private Boolean webhookEnabled;
+
+    /** Whether [start, end) overlaps the break. Always false for a school without one. */
+    public boolean overlapsBreak(LocalTime start, LocalTime end) {
+        return schoolBreakStartHour != null && schoolBreakEndHour != null
+                && start.isBefore(schoolBreakEndHour) && end.isAfter(schoolBreakStartHour);
+    }
 
     @PrePersist
     protected void onCreate() {

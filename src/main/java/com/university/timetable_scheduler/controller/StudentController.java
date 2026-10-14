@@ -40,7 +40,8 @@ public class StudentController {
     @Operation(summary = "Bulk upload students from a CSV file. Columns: studentMatriculationNumber, "
             + "studentFirstName, studentLastName, studentEmail, studentLevel, programCode, "
             + "departmentCode. Upserts by studentMatriculationNumber. Give programCode, or "
-            + "departmentCode for a student without a programme. Valid rows are saved; rejected rows "
+            + "departmentCode for a student without a programme. The name and email columns are optional, a blank "
+            + "cell clears a stored value and a missing column keeps it; a student without a name is shown by matriculation number. Valid rows are saved; rejected rows "
             + "are listed with the reason. Pass dryRun=true to validate and see the counts without "
             + "saving.")
     @PostMapping(value = "/bulk-upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)

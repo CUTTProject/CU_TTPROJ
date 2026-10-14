@@ -35,5 +35,12 @@ public class CreateSchoolRequest {
 
     @NotNull(message = "SchoolDayEndHour is required")
     private LocalTime schoolDayEndHour;
+
+    /** The daily break. It must fall within the school day; no timeslot is allocated inside it. */
+    @NotNull(message = "SchoolBreakStartHour is required")
+    private LocalTime schoolBreakStartHour;
+
+    @NotNull(message = "SchoolBreakEndHour is required")
+    private LocalTime schoolBreakEndHour;
 }
 

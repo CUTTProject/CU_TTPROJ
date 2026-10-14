@@ -14,6 +14,8 @@ public class LecturerResponse {
     private String lecturerStaffNumber;
     private String lecturerFirstName;
     private String lecturerLastName;
+    /** The name if the school supplied one, otherwise lecturerStaffNumber. Always set. */
+    private String lecturerDisplayName;
     private String lecturerEmail;
     private UUID lecturerDepartmentId;
     private LecturerEnum.LecturerStatus lecturerStatus;

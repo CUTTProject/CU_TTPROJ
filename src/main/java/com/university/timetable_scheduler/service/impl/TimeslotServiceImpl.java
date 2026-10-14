@@ -15,6 +15,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.time.LocalTime;
 import java.util.List;
 
 @Service
@@ -29,10 +30,21 @@ public class TimeslotServiceImpl implements TimeslotService {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid school context"));
     }
 
+    /** The solver would drop such a slot anyway; rejecting it says so up front. */
+    private static void rejectIfInBreak(School school, LocalTime start, LocalTime end) {
+        if (school.overlapsBreak(start, end)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "Timeslot overlaps the school's break (%s–%s)".formatted(
+                            school.getSchoolBreakStartHour(), school.getSchoolBreakEndHour()));
+        }
+    }
+
     @Override
     public CreateTimeslotResponse createTimeslot(CreateTimeslotRequest request) {
+        School school = currentSchool();
+        rejectIfInBreak(school, request.getTimeslotStartTime(), request.getTimeslotEndTime());
         Timeslot entity = new Timeslot();
-        entity.setSchool(currentSchool());
+        entity.setSchool(school);
         entity.setTimeslotDay(request.getTimeslotDay());
         entity.setTimeslotStartTime(request.getTimeslotStartTime());
         entity.setTimeslotEndTime(request.getTimeslotEndTime());
@@ -63,6 +75,10 @@ public class TimeslotServiceImpl implements TimeslotService {
         Timeslot entity = timeslotRepository.findByIdAndSchoolId(request.getId(), TenantContext.getSchoolId())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Timeslot not found"));
         timeslotMapper.updateDtoToEntity(request, entity);
+        // Checked after merging, since either time may have been left as it was.
+        if (entity.getTimeslotStartTime() != null && entity.getTimeslotEndTime() != null) {
+            rejectIfInBreak(currentSchool(), entity.getTimeslotStartTime(), entity.getTimeslotEndTime());
+        }
         UpdateTimeslotResponse response = new UpdateTimeslotResponse();
         UpdateTimeslotResponse.Data responseData = new UpdateTimeslotResponse.Data();
         responseData.setTimeslot(timeslotMapper.toResponse(entity));

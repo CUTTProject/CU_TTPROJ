@@ -4,6 +4,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
+import com.university.timetable_scheduler.bulk.Clearable;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -41,13 +42,15 @@ public class BulkUploadStudentArrayRequest {
         @NotBlank(message = "studentMatriculationNumber is required")
         private String studentMatriculationNumber;
 
-        @NotBlank(message = "studentFirstName is required")
+        /** Optional. A blank cell clears the stored name, a missing column keeps it; without one the student is shown by studentMatriculationNumber. */
+        @Clearable
         private String studentFirstName;
 
-        @NotBlank(message = "studentLastName is required")
+        @Clearable
         private String studentLastName;
 
-        @NotBlank(message = "studentEmail is required")
+        /** Optional, and cleared or kept like the names. Checked only when given. */
+        @Clearable
         @Email(message = "studentEmail must be a valid email address")
         private String studentEmail;
 

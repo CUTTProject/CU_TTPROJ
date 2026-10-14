@@ -16,7 +16,7 @@ public class TimetableEntryDTO {
     private String courseCode;
     private String courseName;
     private String sectionName;
-    /** "FirstName LastName" of the assigned lecturer (first lecturer if multiple). */
+    /** The assigned lecturer's name, or staff number if they have none (first lecturer if multiple). */
     private String lecturerName;
     private String day;          // e.g. MONDAY
     private String startTime;    // HH:mm

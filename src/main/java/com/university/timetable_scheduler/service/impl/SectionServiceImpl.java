@@ -260,6 +260,10 @@ public class SectionServiceImpl implements SectionService {
                 if (spec == null) {
                     report.reject(bulkRow, "timeslot", entry,
                             "Must look like M(13:00-15:00): a day (M, T, W, TH, F, SAT, SUN) and a start before the end");
+                } else if (school.overlapsBreak(spec.start(), spec.end())) {
+                    // A warning would save an event restricted to a slot the solver always drops.
+                    report.reject(bulkRow, "timeslot", entry, "Overlaps the school's break (%s–%s)"
+                            .formatted(school.getSchoolBreakStartHour(), school.getSchoolBreakEndHour()));
                 } else {
                     slotSpecs.add(spec);
                 }
