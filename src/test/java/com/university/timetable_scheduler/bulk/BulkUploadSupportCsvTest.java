@@ -28,7 +28,7 @@ class BulkUploadSupportCsvTest {
     }
 
     private static final String HEADER =
-            "courseCode,sectionName,sectionEnrollmentSize,lecturerStaffNumbers,eventDurationMinutes,eventType\n";
+            "courseCode,sectionName,sectionEnrollmentSize,lecturerStaffNumbers,sectionDurationMinutes,eventType\n";
 
     @Test
     @DisplayName("rows are numbered as spreadsheet rows, counting blank lines but not reading them")
@@ -44,7 +44,7 @@ class BulkUploadSupportCsvTest {
         BulkUploadSectionArrayRequest.Row second = rows.get(1).data();
         assertThat(second.getCourseCode()).isEqualTo("CSC102");
         assertThat(second.getLecturerStaffNumbers()).isEqualTo("STF2/STF3");
-        assertThat(second.getEventDurationMinutes()).isEqualTo(120);
+        assertThat(second.getSectionDurationMinutes()).isEqualTo(120);
     }
 
     @Test
@@ -52,7 +52,7 @@ class BulkUploadSupportCsvTest {
     void toleratesBomAndHeaderCase() {
         BulkUploadReport report = new BulkUploadReport();
         List<BulkRow<BulkUploadSectionArrayRequest.Row>> rows = support.readCsv(csv("﻿"
-                + "COURSECODE, SectionName ,lecturerstaffnumbers,eventDurationMinutes,eventType\n"
+                + "COURSECODE, SectionName ,lecturerstaffnumbers,sectionDurationMinutes,eventType\n"
                 + "CSC101,A,STF1,60,CLASS\n"), BulkUploadSectionArrayRequest.Row.class, report);
 
         assertThat(rows).hasSize(1);
@@ -68,7 +68,7 @@ class BulkUploadSupportCsvTest {
                 BulkUploadSectionArrayRequest.Row.class, new BulkUploadReport()))
                 .isInstanceOf(ResponseStatusException.class)
                 .hasMessageContaining("lecturerStaffNumbers")
-                .hasMessageContaining("eventDurationMinutes")
+                .hasMessageContaining("sectionDurationMinutes")
                 .hasMessageContaining("eventType");
     }
 
@@ -97,7 +97,7 @@ class BulkUploadSupportCsvTest {
         assertThat(rows).extracting(BulkRow::rowNumber).containsExactly(3);
         BulkUploadResponse.RowIssue error = report.getErrors().get(0);
         assertThat(error.getRow()).isEqualTo(2);
-        assertThat(error.getColumn()).isEqualTo("eventDurationMinutes");
+        assertThat(error.getColumn()).isEqualTo("sectionDurationMinutes");
         assertThat(error.getValue()).isEqualTo("sixty");
         assertThat(report.skipped()).isEqualTo(1);
     }

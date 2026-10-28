@@ -83,8 +83,13 @@ public class OnboardingServiceImpl implements OnboardingService {
                         "Sections and enrollments are uploaded into one academic period. Create it, and use "
                                 + "its id as academicPeriodId in the next steps.",
                         "POST", "/api/academic-periods/create", null, null, List.of(), academicPeriodRepository),
-                upload(BulkDataset.SECTIONS, "Upload sections and events",
-                        "One row per event. The rows for a section are its whole definition: re-uploading a "
+                upload(BulkDataset.SECTIONS, "Upload sections",
+                        "One row per section, giving its total weekly duration and, optionally, its units "
+                                + "(blank uses the course's). Events are made from it: split=yes divides a "
+                                + "3-unit section 2/3 + 1/3 and a 4-unit section in half, "
+                                + "maybe decides on each generation. relatedTo is the sectionName of another "
+                                + "section this one is taught as part of (PHY 107-CSC: its events, in a "
+                                + "room seating both). Re-uploading a "
                                 + "section replaces its events, lecturers, rooms and timeslots. rooms and "
                                 + "timeslot are optional restrictions.",
                         "/api/sections", BulkUploadSectionArrayRequest.Row.class,

@@ -14,12 +14,13 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * Section and event bulk upload for one academic period. A section is identified by
- * {@code courseCode + sectionName} within the period.
+ * Section bulk upload for one academic period. A section is identified by
+ * {@code courseCode + sectionName} within the period, and has exactly one row.
  *
- * <p>Each row is one event. The rows for a section are its complete definition: re-uploading
- * a section replaces its events and its lecturer, room and timeslot links, rather than adding to
- * them. Courses, lecturers and rooms must already exist.
+ * <p>The row is the section's complete definition: re-uploading it replaces its lecturer, room
+ * and timeslot links and its events. Events are not uploaded; they are derived from
+ * {@code sectionDurationMinutes} and {@code split}. Courses, lecturers and rooms must already
+ * exist.
  *
  * <p>Rows are deliberately not {@code @Valid}-cascaded: BulkUploadSupport validates them one at
  * a time, so a bad row is reported and skipped instead of rejecting the whole request.
@@ -57,13 +58,33 @@ public class BulkUploadSectionArrayRequest {
         @NotBlank(message = "lecturerStaffNumbers is required")
         private String lecturerStaffNumbers;
 
-        @NotNull(message = "eventDurationMinutes is required")
-        @Min(value = 1, message = "eventDurationMinutes must be at least 1")
-        private Integer eventDurationMinutes;
+        /** Total weekly time, in minutes. A multiple of 5. */
+        @NotNull(message = "sectionDurationMinutes is required")
+        @Min(value = 1, message = "sectionDurationMinutes must be at least 1")
+        private Integer sectionDurationMinutes;
 
-        /** EventEnum.EventType: CLASS | LAB */
+        /** Optional. This section's units, which decide how it splits; blank uses the course's units. */
+        @Min(value = 1, message = "sectionUnits must be at least 1")
+        private Integer sectionUnits;
+
+        /** EventEnum.EventType: CLASS | LAB. A label on the events; it does not affect generation. */
         @NotBlank(message = "eventType is required")
         private String eventType;
+
+        /**
+         * Optional, default no. yes splits a 3-unit section into 2/3 + 1/3 of the duration and a
+         * 4-unit section into halves; other sections cannot split. maybe decides afresh on every
+         * generation.
+         */
+        private String split;
+
+        /**
+         * Optional. The sectionName of a section this one is taught together with, e.g.
+         * {@code PHY 107-CSC}; it must name one section in the period. This section gets no events
+         * of its own: it is taught in that section's events, in a room seating both, and shown as
+         * "THIS/RELATED". Pairs only.
+         */
+        private String relatedTo;
 
         /**
          * Optional. Slash-separated room numbers the section is restricted to, e.g.

@@ -4,6 +4,7 @@ import com.university.timetable_scheduler.dto.response.BaseResponse;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.*;
 
+import java.util.List;
 import java.util.UUID;
 
 /** The body of {@code GET /api/time-table/generate/{jobId}}. */
@@ -28,5 +29,7 @@ public class TimetableJobStatusResponse extends BaseResponse {
         private Boolean feasible;
         private String stopReason;
         private String failureMessage;
+        /** How each split=maybe section was planned this run; empty until the run starts solving. */
+        private List<SplitDecisionDTO> splitDecisions;
     }
 }

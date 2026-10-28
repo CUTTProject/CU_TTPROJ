@@ -98,7 +98,7 @@ class TestDataResetServiceTest {
                     M001,Chidi,Eze,chidi@uni.test,100,BSC-CSC
                     """), false);
             sectionService.bulkUploadSections(csv("""
-                    courseCode,sectionName,lecturerStaffNumbers,eventDurationMinutes,eventType,rooms,timeslot
+                    courseCode,sectionName,lecturerStaffNumbers,sectionDurationMinutes,eventType,rooms,timeslot
                     CSC101,A,STF1,60,CLASS,LT1,M(08:00-09:00)
                     """), period.getId(), false);
             enrollmentService.bulkUploadEnrollments(csv("studentMatriculationNumber,courseCode,sectionName\nM001,CSC101,A\n"),

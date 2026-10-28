@@ -67,7 +67,7 @@ public class CspModelBuilder {
 
         int[][] conflictNeighbours = buildEventConflicts(events, sections, eventIndex);
         int[][] overlappingSlots = buildSlotOverlapIndex(slots);
-        List<List<Candidate>> domains = buildDomains(events, rooms, slots, roomIndex, slotIndex, schoolId);
+        List<List<Candidate>> domains = buildDomains(events, sections, rooms, slots, roomIndex, slotIndex, schoolId);
         int[] searchOrder = buildSearchOrder(domains, conflictNeighbours);
 
         logSummary(events, rooms, slots, domains, conflictNeighbours);
@@ -105,11 +105,29 @@ public class CspModelBuilder {
      * but the CSP's variables are events. So every event of section A inherits an edge to every
      * event of each section conflicting with A — and, critically, to its own siblings: two events of
      * the same section share both lecturer and students by definition and must not overlap either.
+     *
+     * <p>A related section has no events: its main section's events cover it. So its conflicts are
+     * folded onto the main section — the main section's events must avoid whatever the related
+     * section's students and lecturers are doing.
      */
     private int[][] buildEventConflicts(List<Event> events, List<Section> sections,
                                         Map<UUID, Integer> eventIndex) {
 
-        Map<UUID, Set<UUID>> sectionNeighbours = conflictGraphBuilder.build(sections).toNeighbourMap();
+        Map<UUID, Set<UUID>> rawNeighbours = conflictGraphBuilder.build(sections).toNeighbourMap();
+        Map<UUID, UUID> ownerOf = new HashMap<>();
+        for (Section section : sections) {
+            if (section.isMerged()) ownerOf.put(section.getId(), section.getSectionMergedInto().getId());
+        }
+        Map<UUID, Set<UUID>> sectionNeighbours = new HashMap<>();
+        rawNeighbours.forEach((section, neighbours) -> {
+            UUID owner = ownerOf.getOrDefault(section, section);
+            for (UUID neighbour : neighbours) {
+                UUID neighbourOwner = ownerOf.getOrDefault(neighbour, neighbour);
+                if (!owner.equals(neighbourOwner)) {
+                    sectionNeighbours.computeIfAbsent(owner, k -> new HashSet<>()).add(neighbourOwner);
+                }
+            }
+        });
 
         Map<UUID, List<Event>> eventsBySection = events.stream()
                 .filter(e -> e.getEventSection() != null)
@@ -182,7 +200,7 @@ public class CspModelBuilder {
     // §3 — Domains: every legal (t, r) per event, precomputed
     // ─────────────────────────────────────────────────────────────────────────────
 
-    private List<List<Candidate>> buildDomains(List<Event> events, List<Room> rooms,
+    private List<List<Candidate>> buildDomains(List<Event> events, List<Section> sections, List<Room> rooms,
                                                List<Timeslot> slots,
                                                Map<UUID, Integer> roomIndex,
                                                Map<UUID, Integer> slotIndex,
@@ -195,6 +213,11 @@ public class CspModelBuilder {
         // Blocks depend only on duration, so cache per distinct duration rather than per event.
         Map<Duration, List<TimeslotBlock>> blocksByDuration = new HashMap<>();
         Map<UUID, List<Room>> allowedRoomsBySection = loadAllowedRooms(schoolId);
+        Map<UUID, Integer> seatsByMainSection = new HashMap<>();
+        sections.stream().filter(Section::isMerged)
+                .collect(Collectors.groupingBy(s -> s.getSectionMergedInto().getId()))
+                .forEach((mainId, related) ->
+                        seatsByMainSection.put(mainId, pairedSeats(related.get(0).getSectionMergedInto(), related)));
 
         List<List<Candidate>> domains = new ArrayList<>(events.size());
 
@@ -206,6 +229,8 @@ public class CspModelBuilder {
             if (event.getEventSection() != null) {
                 List<Room> restricted = allowedRoomsBySection.get(event.getEventSection().getId());
                 if (restricted != null && !restricted.isEmpty()) allowedRooms = restricted;
+                Integer seats = seatsByMainSection.get(event.getEventSection().getId());
+                if (seats != null) allowedRooms = allowedRooms.stream().filter(r -> seats(r, seats)).toList();
             }
 
             List<Candidate> domain = new ArrayList<>(blocks.size() * allowedRooms.size());
@@ -218,17 +243,39 @@ public class CspModelBuilder {
                     Integer roomIdx = roomIndex.get(room.getId());
                     if (roomIdx == null) continue;
 
-                    // NOTE: room capacity vs. section enrollment is NOT filtered here. The spec
-                    // (§3, "Constraints on suitability") requires it, but it is deliberately out of
-                    // scope while the data is auto-generated. To enforce it, skip rooms whose
-                    // roomCapacity is below the section's enrollment size — the domain shrinks and
-                    // nothing else in the solver needs to change.
+                    // NOTE: room capacity vs. section enrollment is filtered only for related
+                    // pairs, above. The spec (§3, "Constraints on suitability") requires it for
+                    // every section, but that is deliberately out of scope while the data is
+                    // auto-generated. To enforce it, filter every section the same way.
                     domain.add(new Candidate(block, room, roomIdx, blockSlotIndices));
                 }
             }
             domains.add(domain);
         }
         return domains;
+    }
+
+    /**
+     * Seats a main section's room needs when sections are taught as part of it: every section's
+     * enrollment added together. An enrollment that is missing or not a number counts as none.
+     */
+    public static int pairedSeats(Section main, List<Section> related) {
+        int seats = enrollmentOf(main);
+        for (Section section : related) seats += enrollmentOf(section);
+        return seats;
+    }
+
+    /** Whether a room seats this many; one of unknown capacity cannot be shown to. */
+    public static boolean seats(Room room, int needed) {
+        return room.getRoomCapacity() != null && room.getRoomCapacity() >= needed;
+    }
+
+    private static int enrollmentOf(Section section) {
+        try {
+            return section.getSectionEnrollmentSize() == null ? 0 : Integer.parseInt(section.getSectionEnrollmentSize().trim());
+        } catch (NumberFormatException e) {
+            return 0;
+        }
     }
 
     /** sectionId → the rooms it is restricted to (spec §1.i, "a set of suitable rooms"). */

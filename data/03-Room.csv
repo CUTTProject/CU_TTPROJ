@@ -11,15 +11,15 @@ Central Workshop,EEE,60,LAB
 Electronic & Control Laboratory,EEE,40,LAB
 Classroom-1,CSC,50,CLASS
 Classroom-2,CSC,50,CLASS
-Classroom-3,CSC,50,CLASS
+Classroom-3,CSC,100,CLASS
 Classroom-4,CSC,50,CLASS
-Classroom-5,CSC,50,CLASS
+Classroom-5,CSC,90,CLASS
 Computer Lab 1,CSC,35,LAB
 Computer Lab 2,CSC,35,LAB
 Classroom-1,SEN,50,CLASS
-Classroom-2,SEN,50,CLASS
+Classroom-2,SEN,200,CLASS
 Classroom-3,SEN,50,CLASS
-Classroom-4,SEN,50,CLASS
+Classroom-4,SEN,40,CLASS
 Classroom-5,SEN,50,CLASS
 Classroom-1,MEE,50,CLASS
 Classroom-2,MEE,50,CLASS

@@ -27,6 +27,9 @@ public class Timeslot extends TenantAwareEntity {
     @Enumerated(EnumType.STRING)
     private TimeslotEnum.TimeslotStatus timeslotStatus;
 
+    @Enumerated(EnumType.STRING)
+    private TimeslotEnum.TimeslotSource timeslotSource;
+
     @PrePersist
     protected void onCreate() {
         super.onCreate();

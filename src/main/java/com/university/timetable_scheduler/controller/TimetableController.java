@@ -78,6 +78,7 @@ public class TimetableController {
         data.setFeasible(job.getFeasible());
         data.setStopReason(job.getStopReason());
         data.setFailureMessage(job.getFailureMessage());
+        data.setSplitDecisions(job.getSplitDecisions());
 
         TimetableJobStatusResponse response = new TimetableJobStatusResponse();
         response.setData(data);

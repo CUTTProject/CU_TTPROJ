@@ -118,7 +118,9 @@ public class TimetableGenerationRunner {
         job.markRunning(Instant.now(clock));
 
         try {
-            timetableService.prepareTimeslots(job.getSchoolId());
+            // Events first: the default timeslot grid is sized from their durations.
+            job.setSplitDecisions(timetableService.prepareEvents(job.getSchoolId(), job.getAcademicPeriodId()));
+            timetableService.prepareTimeslots(job.getSchoolId(), job.getAcademicPeriodId());
 
             Optional<CspModel> model = timetableService.buildModel(job.getSchoolId(), job.getAcademicPeriodId());
             if (model.isEmpty()) {
@@ -209,7 +211,11 @@ public class TimetableGenerationRunner {
                         result.elapsed() != null ? result.elapsed().toSeconds() : 0,
                         timetable.getTotalEvents(),
                         timetable.getScheduledEvents(),
-                        timetable.getEntries()));
+                        timetable.getEntries(),
+                        timetable.getBreakStartTime(),
+                        timetable.getBreakEndTime(),
+                        job.getSplitDecisions(),
+                        timetable.getUnassigned()));
 
         if (!result.isFeasible() && result.breakdown() != null) {
             webhookService.publish(target, WebhookEnum.WebhookEventType.TIMETABLE_CONFLICTS,

@@ -74,8 +74,9 @@ class OnboardingServiceImplTest {
         OnboardingGuideResponse.Step sectionsStep = step(guide(), BulkDataset.SECTIONS.name());
 
         assertThat(sectionsStep.getRequiredColumns()).containsExactly(
-                "courseCode", "sectionName", "lecturerStaffNumbers", "eventDurationMinutes", "eventType");
-        assertThat(sectionsStep.getOptionalColumns()).containsExactly("sectionEnrollmentSize", "rooms", "timeslot");
+                "courseCode", "sectionName", "lecturerStaffNumbers", "sectionDurationMinutes", "eventType");
+        assertThat(sectionsStep.getOptionalColumns()).containsExactly(
+                "sectionEnrollmentSize", "sectionUnits", "split", "relatedTo", "rooms", "timeslot");
         assertThat(sectionsStep.getEndpoint()).isEqualTo("/api/sections/bulk-upload?academicPeriodId={academicPeriodId}");
         assertThat(step(guide(), OnboardingServiceImpl.ACADEMIC_PERIOD).getRequiredColumns()).isEmpty();
     }

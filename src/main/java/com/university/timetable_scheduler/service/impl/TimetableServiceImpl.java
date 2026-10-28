@@ -13,8 +13,10 @@ import com.itextpdf.layout.element.Table;
 import com.itextpdf.layout.properties.TextAlignment;
 import com.itextpdf.layout.properties.UnitValue;
 import com.university.timetable_scheduler.dto.request.timetable.*;
+import com.university.timetable_scheduler.dto.response.timetable.SplitDecisionDTO;
 import com.university.timetable_scheduler.dto.response.timetable.TimetableEntryDTO;
 import com.university.timetable_scheduler.dto.response.timetable.TimetableResponse;
+import com.university.timetable_scheduler.dto.response.timetable.UnassignedEventDTO;
 import com.university.timetable_scheduler.entity.*;
 import com.university.timetable_scheduler.repository.*;
 import com.university.timetable_scheduler.service.TimetableService;
@@ -36,7 +38,9 @@ import java.io.ByteArrayOutputStream;
 import java.time.Duration;
 import java.time.LocalTime;
 import java.util.*;
+import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @Service
 @AllArgsConstructor
@@ -50,6 +54,7 @@ public class TimetableServiceImpl implements TimetableService {
     private EventRepository eventRepository;
     private TimeslotRepository timeslotRepository;
     private RoomRepository roomRepository;
+    private SectionRoomRepository sectionRoomRepository;
     private AcademicPeriodRepository academicPeriodRepository;
     private SchoolRepository schoolRepository;
 
@@ -96,10 +101,54 @@ public class TimetableServiceImpl implements TimetableService {
                         "Academic period with id, %s, does not exist".formatted(rawAcademicPeriodId)));
     }
 
-    /** Gives the school a default week if it has never defined one. */
+    /**
+     * Re-plans the events of every section defined by duration, so a MAYBE split is decided
+     * afresh on each run. Sections whose events were defined one by one are left alone.
+     *
+     * @return how each MAYBE section was planned this run
+     */
     @Transactional
-    public void prepareTimeslots(UUID schoolId) {
-        seedDefaultTimeslotsIfAbsent(schoolId);
+    public List<SplitDecisionDTO> prepareEvents(UUID schoolId, UUID academicPeriodId) {
+        Random random = newRandom();
+        List<Event> events = new ArrayList<>();
+        List<SplitDecisionDTO> decisions = new ArrayList<>();
+        for (Section section : sectionRepository.findSectionByFilter(schoolId, null, null, null, academicPeriodId, null)) {
+            if (section.getSectionDurationMinutes() == null) continue;
+            eventRepository.findEventByFilter(schoolId, null, section.getId(), null, null)
+                    .forEach(e -> e.setIsDeleted(true));
+            List<Event> planned = SectionEventPlanner.plan(section, random);
+            if (section.getSectionSplit() == SectionEnum.SectionSplit.MAYBE && !planned.isEmpty()) {
+                decisions.add(new SplitDecisionDTO(section.getId(), section.getSectionCourse().getCourseCode(),
+                        section.getSectionName(), planned.size() > 1,
+                        planned.stream().map(e -> e.getEventDuration().toMinutes()).toList()));
+            }
+            events.addAll(planned);
+        }
+        eventRepository.saveAll(events);
+        decisions.forEach(d -> log.info("Section {} ({}) is split={} for this run", d.sectionName(),
+                d.courseCode(), d.split() ? "YES" : "NO"));
+        return decisions;
+    }
+
+    /**
+     * Fits the school's default week to this period's events: slots are as long as the largest
+     * length dividing every event's duration, capped at an hour, so every event fills a whole run
+     * of slots. Default slots no longer on that grid are retired; custom ones are never touched.
+     */
+    @Transactional
+    public void prepareTimeslots(UUID schoolId, UUID academicPeriodId) {
+        int slotMinutes = 60;
+        for (Event event : eventRepository.findAllBySchoolIdAndAcademicPeriodId(schoolId, academicPeriodId)) {
+            if (event.getEventDuration() != null && event.getEventDuration().toMinutes() > 0) {
+                slotMinutes = gcd(slotMinutes, (int) event.getEventDuration().toMinutes());
+            }
+        }
+        slotMinutes = Math.max(slotMinutes, SectionEventPlanner.MINUTE_STEP);
+        syncDefaultTimeslots(currentSchool(), slotMinutes);
+    }
+
+    private static int gcd(int a, int b) {
+        return b == 0 ? a : gcd(b, a % b);
     }
 
     /**
@@ -215,6 +264,8 @@ public class TimetableServiceImpl implements TimetableService {
             }
         });
 
+        Map<UUID, List<Section>> relatedByMain = relatedByMain(schoolId, academicPeriodId);
+
         List<TimetableEntryDTO> entries = new ArrayList<>();
         for (Event event : events) {
             if (event.getEventTimeslot() == null) continue;
@@ -229,12 +280,12 @@ public class TimetableServiceImpl implements TimetableService {
 
             Section section = event.getEventSection();
             if (section != null) {
-                dto.setSectionName(section.getSectionName());
+                List<Section> related = relatedByMain.getOrDefault(section.getId(), List.of());
+                dto.setSectionName(sectionLabel(section, related));
                 dto.setLecturerName(sectionLecturerName.get(section.getId()));
-                Course course = section.getSectionCourse();
-                if (course != null) {
-                    dto.setCourseCode(course.getCourseCode());
-                    dto.setCourseName(course.getCourseName());
+                if (section.getSectionCourse() != null) {
+                    dto.setCourseCode(courseLabel(section, related, Course::getCourseCode));
+                    dto.setCourseName(courseLabel(section, related, Course::getCourseName));
                 }
             }
 
@@ -258,6 +309,13 @@ public class TimetableServiceImpl implements TimetableService {
         response.setEntries(entries);
         response.setTotalEvents(events.size());
         response.setScheduledEvents(entries.size());
+        response.setUnassigned(unassignedEvents(schoolId, events, relatedByMain));
+        schoolRepository.findLiveById(schoolId).ifPresent(school -> {
+            if (school.getSchoolBreakStartHour() != null && school.getSchoolBreakEndHour() != null) {
+                response.setBreakStartTime(school.getSchoolBreakStartHour().toString());
+                response.setBreakEndTime(school.getSchoolBreakEndHour().toString());
+            }
+        });
         response.setResponseMessage(
                 "Timetable generated. " + entries.size() + "/" + events.size() + " events scheduled.");
         return response;
@@ -324,40 +382,144 @@ public class TimetableServiceImpl implements TimetableService {
         return first.getTimeslotEndTime() != null ? first.getTimeslotEndTime().toString() : null;
     }
 
+    /** Main section id → the related sections taught with it, for "A/B" labels. */
+    private Map<UUID, List<Section>> relatedByMain(UUID schoolId, UUID academicPeriodId) {
+        return sectionRepository.findSectionByFilter(schoolId, null, null, null, academicPeriodId, null).stream()
+                .filter(Section::isMerged)
+                .collect(Collectors.groupingBy(s -> s.getSectionMergedInto().getId()));
+    }
+
     /**
-     * Seeds Mon–Fri 1-hour slots across the school's day, only if it has none. Slots run from the
-     * day's start up to the break and resume when it ends; a remainder shorter than an hour is left
-     * unallocated.
+     * Each related course's value, then the main course's, joined by "/" — the order the relatedTo
+     * row reads: PHY 101 related to PHY 107 is "PHY 101/PHY 107".
      */
-    private void seedDefaultTimeslotsIfAbsent(UUID schoolId) {
-        if (timeslotRepository.countBySchool_Id(schoolId) > 0) return;
+    private static String courseLabel(Section main, List<Section> related, Function<Course, String> part) {
+        return Stream.concat(related.stream(), Stream.of(main))
+                .map(Section::getSectionCourse)
+                .filter(Objects::nonNull)
+                .map(part)
+                .filter(Objects::nonNull)
+                .collect(Collectors.joining("/"));
+    }
 
-        School school = currentSchool();
-        List<Timeslot> slots = new ArrayList<>();
+    /** The section names in the same order as {@link #courseLabel}: "PHY 101-CSC/PHY 107-CSC". */
+    private static String sectionLabel(Section main, List<Section> related) {
+        return Stream.concat(related.stream(), Stream.of(main))
+                .map(Section::getSectionName)
+                .filter(Objects::nonNull)
+                .collect(Collectors.joining("/"));
+    }
 
-        TimeslotEnum.TimeslotDay[] weekdays = {
-            TimeslotEnum.TimeslotDay.MONDAY,
-            TimeslotEnum.TimeslotDay.TUESDAY,
-            TimeslotEnum.TimeslotDay.WEDNESDAY,
-            TimeslotEnum.TimeslotDay.THURSDAY,
-            TimeslotEnum.TimeslotDay.FRIDAY
-        };
+    /**
+     * Events with no time, each with the reason. A related pair whose rooms are all too small for
+     * both groups is said so; anything else could not be fitted without a clash.
+     */
+    private List<UnassignedEventDTO> unassignedEvents(UUID schoolId, List<Event> events,
+                                                      Map<UUID, List<Section>> relatedByMain) {
+        List<Event> unassigned = events.stream().filter(e -> e.getEventTimeslot() == null).toList();
+        if (unassigned.isEmpty()) return List.of();
 
-        for (TimeslotEnum.TimeslotDay day : weekdays) {
+        List<Room> rooms = roomRepository.findAllBySchool_Id(schoolId);
+        Map<UUID, List<Room>> roomsBySection = new HashMap<>();
+        sectionRoomRepository.findAllBySchool_Id(schoolId).forEach(sr -> {
+            if (sr.getSectionRoomSection() != null && sr.getSectionRoom() != null) {
+                roomsBySection.computeIfAbsent(sr.getSectionRoomSection().getId(), k -> new ArrayList<>())
+                        .add(sr.getSectionRoom());
+            }
+        });
+
+        List<UnassignedEventDTO> result = new ArrayList<>();
+        for (Event event : unassigned) {
+            Section section = event.getEventSection();
+            List<Section> related = section != null
+                    ? relatedByMain.getOrDefault(section.getId(), List.of()) : List.of();
+            String label = section == null ? null
+                    : section.getSectionCourse() == null ? section.getSectionName()
+                    : courseLabel(section, related, Course::getCourseCode);
+            String reason = "No free time and room could be found for it without a clash";
+            if (!related.isEmpty()) {
+                int seats = CspModelBuilder.pairedSeats(section, related);
+                List<Room> allowed = roomsBySection.getOrDefault(section.getId(), rooms);
+                if (allowed.stream().noneMatch(r -> CspModelBuilder.seats(r, seats))) {
+                    int largest = allowed.stream().map(Room::getRoomCapacity).filter(Objects::nonNull)
+                            .mapToInt(Integer::intValue).max().orElse(0);
+                    reason = "No room large enough for " + label + ": it needs " + seats + " seats and the largest "
+                            + (roomsBySection.containsKey(section.getId()) ? "of its rooms" : "room") + " holds " + largest;
+                }
+            }
+            result.add(new UnassignedEventDTO(event.getId(), label,
+                    section != null ? sectionLabel(section, related) : null,
+                    event.getEventDuration() != null ? event.getEventDuration().toMinutes() : 0, reason));
+        }
+        result.sort(Comparator.comparing(UnassignedEventDTO::courseCode, Comparator.nullsLast(Comparator.naturalOrder())));
+        return result;
+    }
+
+    private static final TimeslotEnum.TimeslotDay[] WEEKDAYS = {
+        TimeslotEnum.TimeslotDay.MONDAY,
+        TimeslotEnum.TimeslotDay.TUESDAY,
+        TimeslotEnum.TimeslotDay.WEDNESDAY,
+        TimeslotEnum.TimeslotDay.THURSDAY,
+        TimeslotEnum.TimeslotDay.FRIDAY
+    };
+
+    /**
+     * Makes the school's default slots exactly the Mon–Fri grid of {@code slotMinutes} slots across
+     * its day. Slots run from the day's start up to the break and resume when it ends; a remainder
+     * shorter than a slot is left unallocated. Slots already on the grid are kept, so their ids
+     * stay stable between runs.
+     */
+    private void syncDefaultTimeslots(School school, int slotMinutes) {
+        Map<String, Timeslot> existingDefaults = new HashMap<>();
+        for (Timeslot slot : timeslotRepository.findAllBySchool_Id(school.getId())) {
+            if (isDefault(slot, school)) {
+                existingDefaults.put(slotKey(slot.getTimeslotDay(), slot.getTimeslotStartTime(), slot.getTimeslotEndTime()), slot);
+            }
+        }
+
+        List<Timeslot> toAdd = new ArrayList<>();
+        for (TimeslotEnum.TimeslotDay day : WEEKDAYS) {
             LocalTime start = school.getSchoolDayStartHour();
-            while (!start.plusHours(1).isAfter(school.getSchoolDayEndHour())
-                    && start.plusHours(1).isAfter(start)) {  // guards wrapping past midnight
-                LocalTime end = start.plusHours(1);
+            while (!start.plusMinutes(slotMinutes).isAfter(school.getSchoolDayEndHour())
+                    && start.plusMinutes(slotMinutes).isAfter(start)) {  // guards wrapping past midnight
+                LocalTime end = start.plusMinutes(slotMinutes);
                 if (school.overlapsBreak(start, end)) {
                     start = school.getSchoolBreakEndHour();
                     continue;
                 }
-                slots.add(buildTimeslot(day, start, end, school));
+                Timeslot kept = existingDefaults.remove(slotKey(day, start, end));
+                if (kept == null) {
+                    toAdd.add(buildTimeslot(day, start, end, school));
+                } else if (kept.getTimeslotSource() == null) {
+                    kept.setTimeslotSource(TimeslotEnum.TimeslotSource.DEFAULT);
+                }
                 start = end;
             }
         }
+        // What is left is off the grid. Soft-deleted, so events of other periods placed on them
+        // still show where they were.
+        existingDefaults.values().forEach(slot -> slot.setIsDeleted(true));
+        timeslotRepository.saveAll(toAdd);
+    }
 
-        timeslotRepository.saveAll(slots);
+    /**
+     * Rows from before slots were tagged count as default when they match what the old seeding
+     * made: a whole-hour, hour-long weekday slot within the school day.
+     */
+    private static boolean isDefault(Timeslot slot, School school) {
+        if (slot.getTimeslotSource() != null) {
+            return slot.getTimeslotSource() == TimeslotEnum.TimeslotSource.DEFAULT;
+        }
+        LocalTime start = slot.getTimeslotStartTime();
+        LocalTime end = slot.getTimeslotEndTime();
+        return start != null && end != null && slot.getTimeslotDay() != null
+                && Arrays.asList(WEEKDAYS).contains(slot.getTimeslotDay())
+                && start.getMinute() == 0 && end.equals(start.plusHours(1))
+                && !start.isBefore(school.getSchoolDayStartHour()) && !end.isAfter(school.getSchoolDayEndHour());
+    }
+
+    private static String slotKey(TimeslotEnum.TimeslotDay day, LocalTime start, LocalTime end) {
+        return day + "|" + start + "|" + end;
     }
 
     private Timeslot buildTimeslot(TimeslotEnum.TimeslotDay day, LocalTime start, LocalTime end, School school) {
@@ -366,7 +528,8 @@ public class TimetableServiceImpl implements TimetableService {
         ts.setTimeslotDay(day);
         ts.setTimeslotStartTime(start);
         ts.setTimeslotEndTime(end);
-        ts.setTimeslotDuration(Duration.ofHours(1));
+        ts.setTimeslotDuration(Duration.between(start, end));
+        ts.setTimeslotSource(TimeslotEnum.TimeslotSource.DEFAULT);
         return ts;
     }
 
@@ -380,7 +543,8 @@ public class TimetableServiceImpl implements TimetableService {
                 .findByIdAndSchoolId(parseAcademicPeriodId(downloadTimetableRequest.getAcademicPeriodId()), schoolId)
                 .orElseThrow(()-> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Academic period with id, %s does not exist".formatted(downloadTimetableRequest.getAcademicPeriodId())));
 
-        List<Event> events = eventRepository.findAllBySchoolIdAndAcademicPeriodId(schoolId, academicPeriod.getId()).stream()
+        List<Event> allEvents = eventRepository.findAllBySchoolIdAndAcademicPeriodId(schoolId, academicPeriod.getId());
+        List<Event> events = allEvents.stream()
                 .filter(e -> e.getEventTimeslot() != null && e.getEventRoom() != null)
                 .toList();
 
@@ -391,6 +555,12 @@ public class TimetableServiceImpl implements TimetableService {
                         sl.getSectionLecturerLecturer().displayName());
             }
         });
+
+        Map<UUID, List<Section>> relatedByMain = relatedByMain(schoolId, academicPeriod.getId());
+        School school = currentSchool();
+        LocalTime breakStart = school.getSchoolBreakStartHour();
+        LocalTime breakEnd = school.getSchoolBreakEndHour();
+        boolean hasBreak = breakStart != null && breakEnd != null;
 
         try {
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
@@ -437,8 +607,14 @@ public class TimetableServiceImpl implements TimetableService {
                             .setBackgroundColor(ColorConstants.LIGHT_GRAY));
                 }
 
+                // The break goes in time order: before the first event that starts at or after it.
+                boolean breakShown = !hasBreak;
                 for (Event event : dayEvents) {
                     Timeslot ts      = event.getEventTimeslot();
+                    if (!breakShown && !ts.getTimeslotStartTime().isBefore(breakStart)) {
+                        table.addCell(breakCell(breakStart, breakEnd));
+                        breakShown = true;
+                    }
                     Section  section = event.getEventSection();
                     Course   course  = section != null ? section.getSectionCourse() : null;
 
@@ -451,9 +627,11 @@ public class TimetableServiceImpl implements TimetableService {
                     }
 
                     table.addCell(cell(timeStr));
-                    table.addCell(cell(course != null ? nullSafe(course.getCourseCode()) : "-"));
-                    table.addCell(cell(course != null ? nullSafe(course.getCourseName()) : "-"));
-                    table.addCell(cell(section != null ? nullSafe(section.getSectionName()) : "-"));
+                    List<Section> related = section != null
+                            ? relatedByMain.getOrDefault(section.getId(), List.of()) : List.of();
+                    table.addCell(cell(course != null ? nullSafe(courseLabel(section, related, Course::getCourseCode)) : "-"));
+                    table.addCell(cell(course != null ? nullSafe(courseLabel(section, related, Course::getCourseName)) : "-"));
+                    table.addCell(cell(section != null ? nullSafe(sectionLabel(section, related)) : "-"));
                     table.addCell(cell(sectionLecturerName.getOrDefault(
                             section != null ? section.getId() : null, "-")));
                     table.addCell(cell(event.getEventRoom() != null
@@ -461,8 +639,23 @@ public class TimetableServiceImpl implements TimetableService {
                     table.addCell(cell(event.getEventType() != null
                             ? event.getEventType().name() : "-"));
                 }
+                if (!breakShown) table.addCell(breakCell(breakStart, breakEnd));
 
                 doc.add(table);
+            }
+
+            List<UnassignedEventDTO> unassigned = unassignedEvents(schoolId, allEvents, relatedByMain);
+            if (!unassigned.isEmpty()) {
+                doc.add(new Paragraph("UNASSIGNED")
+                        .setFont(PdfFontFactory.createFont(StandardFonts.HELVETICA_BOLD))
+                        .setFontSize(13)
+                        .setMarginTop(14)
+                        .setMarginBottom(4));
+                for (int i = 0; i < unassigned.size(); i++) {
+                    UnassignedEventDTO u = unassigned.get(i);
+                    doc.add(new Paragraph((i + 1) + ". " + nullSafe(u.courseCode()) + " (" + nullSafe(u.sectionName())
+                            + ", " + u.durationMinutes() + " min): " + u.reason()).setFontSize(9));
+                }
             }
 
             doc.close();
@@ -475,6 +668,13 @@ public class TimetableServiceImpl implements TimetableService {
 
     private static Cell cell(String text) {
         return new Cell().add(new Paragraph(text).setFontSize(8));
+    }
+    /** A full-width row marking the daily break. */
+    private static Cell breakCell(LocalTime start, LocalTime end) {
+        return new Cell(1, 7)
+                .add(new Paragraph(start + " – " + end + "   BREAK").setFontSize(8))
+                .setBackgroundColor(ColorConstants.LIGHT_GRAY)
+                .setTextAlignment(TextAlignment.CENTER);
     }
     private static String nullSafe(String s) { return s != null ? s : "-"; }
 

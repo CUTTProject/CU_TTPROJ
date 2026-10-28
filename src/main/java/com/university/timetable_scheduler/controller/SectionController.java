@@ -39,11 +39,17 @@ public class SectionController {
         return sectionService.deleteSection(request);
     }
 
-    @Operation(summary = "Bulk upload sections and their events for one academic period from a CSV file. Columns: "
+    @Operation(summary = "Bulk upload sections for one academic period from a CSV file. Columns: "
             + "courseCode, sectionName, sectionEnrollmentSize, lecturerStaffNumbers (slash-separated), "
-            + "eventDurationMinutes, eventType (CLASS | LAB), rooms (slash-separated, optional), "
-            + "timeslot (e.g. M(13:00-15:00)/TH(14:00-17:00), optional). One row per event; a section "
-            + "is courseCode + sectionName, and re-uploading it replaces its events and links. Valid "
+            + "sectionDurationMinutes (total weekly time, a multiple of 5), sectionUnits (optional; blank "
+            + "uses the course's units), eventType (CLASS | LAB, a label only), split (yes | no | maybe, "
+            + "optional, default no: yes splits a 3-unit section 2/3 + 1/3 and a 4-unit section in half; "
+            + "maybe decides on each generation), relatedTo (optional sectionName "
+            + "of the section this one is taught together with, e.g. PHY 107-CSC: this section gets no "
+            + "events of its own and shares that one's, in a room seating both, shown as "
+            + "PHY 101/PHY 107; pairs only), rooms (slash-separated, optional), timeslot (e.g. "
+            + "M(13:00-15:00)/TH(14:00-17:00), optional). One row per section; a section is courseCode + "
+            + "sectionName, and re-uploading it replaces its events and links. Valid "
             + "rows are saved; rejected rows are listed with the reason. Pass dryRun=true to validate "
             + "and see the counts without saving.")
     @PostMapping(value = "/bulk-upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
@@ -54,7 +60,7 @@ public class SectionController {
         return sectionService.bulkUploadSections(file, academicPeriodId, dryRun);
     }
 
-    @Operation(summary = "Bulk upload sections and their events for one academic period from a JSON array. Rows "
+    @Operation(summary = "Bulk upload sections for one academic period from a JSON array. Rows "
             + "use the CSV column names. Pass dryRun=true to validate and see the counts without "
             + "saving.")
     @PostMapping(value = "/bulk-upload/array", consumes = MediaType.APPLICATION_JSON_VALUE)

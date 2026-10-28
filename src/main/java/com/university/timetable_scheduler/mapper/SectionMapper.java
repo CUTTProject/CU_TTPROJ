@@ -10,6 +10,7 @@ import java.util.List;
 public interface SectionMapper {
     @Mapping(source = "sectionCourse.id", target = "sectionCourseId")
     @Mapping(source = "sectionAcademicPeriod.id", target = "sectionAcademicPeriodId")
+    @Mapping(source = "sectionMergedInto.id", target = "sectionMergedIntoId")
     SectionResponse toResponse(Section section);
 
     List<SectionResponse> toResponseList(List<Section> sections);

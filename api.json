@@ -15,6 +15,12 @@
       "bearerAuth": []
     }
   ],
+  "tags": [
+    {
+      "name": "testing-controller",
+      "description": "Development only. Disabled unless TESTING_RESET_ENABLED=true."
+    }
+  ],
   "paths": {
     "/api/timeslots/update": {
       "put": {
@@ -166,6 +172,56 @@
         }
       }
     },
+    "/api/schools/webhook": {
+      "get": {
+        "tags": [
+          "school-controller"
+        ],
+        "summary": "Read the webhook settings. The signing secret is never returned.",
+        "operationId": "readWebhookConfig",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/WebhookConfigResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "school-controller"
+        ],
+        "summary": "Set, update or clear the webhook that receives generated timetables. Send a blank url to clear it. The signing secret is returned once, here.",
+        "operationId": "configureWebhook",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConfigureWebhookRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/WebhookConfigResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/schools/update": {
       "put": {
         "tags": [
@@ -219,6 +275,36 @@
               "*/*": {
                 "schema": {
                   "$ref": "#/components/schemas/UpdateRoomResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/programs/update": {
+      "put": {
+        "tags": [
+          "program-controller"
+        ],
+        "operationId": "updateProgram",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateProgramRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/UpdateProgramResponse"
                 }
               }
             }
@@ -442,7 +528,7 @@
         "tags": [
           "timetable-controller"
         ],
-        "summary": "Run the timetable solver. Persist and return the generated schedule.",
+        "summary": "Queue a timetable generation. Returns a job id immediately; the finished timetable is delivered to the school's webhook.",
         "operationId": "generateTimetable",
         "parameters": [
           {
@@ -460,88 +546,7 @@
             "content": {
               "*/*": {
                 "schema": {
-                  "$ref": "#/components/schemas/TimetableResponse"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/time-table/bulk-upload": {
-      "post": {
-        "tags": [
-          "timetable-controller"
-        ],
-        "summary": "Bulk upload timetable from CSV. Provide the academicPeriodId of an existing academic period.",
-        "operationId": "bulkUploadTimetable",
-        "parameters": [
-          {
-            "name": "academicPeriodId",
-            "in": "query",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "multipart/form-data": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "file": {
-                    "type": "string",
-                    "format": "binary"
-                  }
-                },
-                "required": [
-                  "file"
-                ]
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "*/*": {
-                "schema": {
-                  "$ref": "#/components/schemas/BulkUploadTimetableResponse"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/time-table/bulk-upload/array": {
-      "post": {
-        "tags": [
-          "timetable-controller"
-        ],
-        "summary": "Bulk upload timetable from a JSON array. academicSession is provided inside the request body.",
-        "operationId": "bulkUploadTimetableArray",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/BulkUploadTimetableArrayRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "*/*": {
-                "schema": {
-                  "$ref": "#/components/schemas/BulkUploadTimetableResponse"
+                  "$ref": "#/components/schemas/GenerateTimetableAcceptedResponse"
                 }
               }
             }
@@ -579,6 +584,98 @@
         }
       }
     },
+    "/api/students/bulk-upload": {
+      "post": {
+        "tags": [
+          "student-controller"
+        ],
+        "summary": "Bulk upload students from a CSV file. Columns: studentMatriculationNumber, studentFirstName, studentLastName, studentEmail, studentLevel, programCode, departmentCode. Upserts by studentMatriculationNumber. Give programCode, or departmentCode for a student without a programme. The name and email columns are optional, a blank cell clears a stored value and a missing column keeps it; a student without a name is shown by matriculation number. Valid rows are saved; rejected rows are listed with the reason. Pass dryRun=true to validate and see the counts without saving.",
+        "operationId": "bulkUploadStudents",
+        "parameters": [
+          {
+            "name": "dryRun",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": false
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "file": {
+                    "type": "string",
+                    "format": "binary"
+                  }
+                },
+                "required": [
+                  "file"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/BulkUploadResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/students/bulk-upload/array": {
+      "post": {
+        "tags": [
+          "student-controller"
+        ],
+        "summary": "Bulk upload students from a JSON array. Rows use the CSV column names. Pass dryRun=true to validate and see the counts without saving.",
+        "operationId": "bulkUploadStudentsArray",
+        "parameters": [
+          {
+            "name": "dryRun",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": false
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BulkUploadStudentArrayRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/BulkUploadResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/sections/create": {
       "post": {
         "tags": [
@@ -602,6 +699,107 @@
               "*/*": {
                 "schema": {
                   "$ref": "#/components/schemas/CreateSectionResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/sections/bulk-upload": {
+      "post": {
+        "tags": [
+          "section-controller"
+        ],
+        "summary": "Bulk upload sections for one academic period from a CSV file. Columns: courseCode, sectionName, sectionEnrollmentSize, lecturerStaffNumbers (slash-separated), sectionDurationMinutes (total weekly time, a multiple of 5), sectionUnits (optional; blank uses the course's units), eventType (CLASS | LAB, a label only), split (yes | no | maybe, optional, default no: yes splits a 3-unit section 2/3 + 1/3 and a 4-unit section in half; maybe decides on each generation), relatedTo (optional sectionName of the section this one is taught together with, e.g. PHY 107-CSC: this section gets no events of its own and shares that one's, in a room seating both, shown as PHY 101/PHY 107; pairs only), rooms (slash-separated, optional), timeslot (e.g. M(13:00-15:00)/TH(14:00-17:00), optional). One row per section; a section is courseCode + sectionName, and re-uploading it replaces its events and links. Valid rows are saved; rejected rows are listed with the reason. Pass dryRun=true to validate and see the counts without saving.",
+        "operationId": "bulkUploadSections",
+        "parameters": [
+          {
+            "name": "academicPeriodId",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "dryRun",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": false
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "file": {
+                    "type": "string",
+                    "format": "binary"
+                  }
+                },
+                "required": [
+                  "file"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/BulkUploadResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/sections/bulk-upload/array": {
+      "post": {
+        "tags": [
+          "section-controller"
+        ],
+        "summary": "Bulk upload sections for one academic period from a JSON array. Rows use the CSV column names. Pass dryRun=true to validate and see the counts without saving.",
+        "operationId": "bulkUploadSectionsArray",
+        "parameters": [
+          {
+            "name": "dryRun",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": false
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BulkUploadSectionArrayRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/BulkUploadResponse"
                 }
               }
             }
@@ -662,6 +860,27 @@
               "*/*": {
                 "schema": {
                   "$ref": "#/components/schemas/CreateSectionLecturerResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/schools/webhook/test": {
+      "post": {
+        "tags": [
+          "school-controller"
+        ],
+        "summary": "Send a single test delivery to the configured webhook and report the result.",
+        "operationId": "testWebhook",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/WebhookTestResponse"
                 }
               }
             }
@@ -735,8 +954,19 @@
         "tags": [
           "room-controller"
         ],
-        "summary": "Bulk upload rooms from a CSV file. Format - {roomNumber, roomBuilding, roomCapacity, roomType (LAB | SEMINAR_ROOM | LECTURE_THEATRE)} Upserts by 'roomNumber + roomBuilding' - existing rooms are updated, new ones are created.",
+        "summary": "Bulk upload rooms from a CSV file. Columns: roomNumber, roomBuilding, roomCapacity, roomType (CLASS | LAB | SEMINAR_ROOM | LECTURE_THEATRE). Upserts by roomNumber + roomBuilding. Valid rows are saved; rejected rows are listed with the reason. Pass dryRun=true to validate and see the counts without saving.",
         "operationId": "bulkUploadRooms",
+        "parameters": [
+          {
+            "name": "dryRun",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": false
+            }
+          }
+        ],
         "requestBody": {
           "content": {
             "multipart/form-data": {
@@ -761,7 +991,7 @@
             "content": {
               "*/*": {
                 "schema": {
-                  "$ref": "#/components/schemas/BulkUploadRoomResponse"
+                  "$ref": "#/components/schemas/BulkUploadResponse"
                 }
               }
             }
@@ -774,8 +1004,19 @@
         "tags": [
           "room-controller"
         ],
-        "summary": "Bulk upload rooms from a JSON array. Format - {roomNumber, roomBuilding, roomCapacity, roomType (LAB | SEMINAR_ROOM | LECTURE_THEATRE)} Upserts by 'roomNumber + roomBuilding' - existing rooms are updated, new ones are created.",
+        "summary": "Bulk upload rooms from a JSON array. Rows use the CSV column names. Pass dryRun=true to validate and see the counts without saving.",
         "operationId": "bulkUploadRoomsArray",
+        "parameters": [
+          {
+            "name": "dryRun",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": false
+            }
+          }
+        ],
         "requestBody": {
           "content": {
             "application/json": {
@@ -792,7 +1033,251 @@
             "content": {
               "*/*": {
                 "schema": {
-                  "$ref": "#/components/schemas/BulkUploadRoomResponse"
+                  "$ref": "#/components/schemas/BulkUploadResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/programs/create": {
+      "post": {
+        "tags": [
+          "program-controller"
+        ],
+        "operationId": "createProgram",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateProgramRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreateProgramResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/programs/bulk-upload": {
+      "post": {
+        "tags": [
+          "program-controller"
+        ],
+        "summary": "Bulk upload programmes from a CSV file. Columns: programCode, programName, departmentCode, programCoordinatorStaffNumber, programLevel (UNDERGRADUATE | POSTGRADUATE), programDuration, programDescription, programStatus (ACTIVE | INACTIVE). Upserts by programCode. Valid rows are saved; rejected rows are listed with the reason. Pass dryRun=true to validate and see the counts without saving.",
+        "operationId": "bulkUploadPrograms",
+        "parameters": [
+          {
+            "name": "dryRun",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": false
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "file": {
+                    "type": "string",
+                    "format": "binary"
+                  }
+                },
+                "required": [
+                  "file"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/BulkUploadResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/programs/bulk-upload/array": {
+      "post": {
+        "tags": [
+          "program-controller"
+        ],
+        "summary": "Bulk upload programmes from a JSON array. Rows use the CSV column names. Pass dryRun=true to validate and see the counts without saving.",
+        "operationId": "bulkUploadProgramsArray",
+        "parameters": [
+          {
+            "name": "dryRun",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": false
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BulkUploadProgramArrayRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/BulkUploadResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/program-courses/create": {
+      "post": {
+        "tags": [
+          "program-course-controller"
+        ],
+        "operationId": "createProgramCourse",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateProgramCourseRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreateProgramCourseResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/program-courses/bulk-upload": {
+      "post": {
+        "tags": [
+          "program-course-controller"
+        ],
+        "summary": "Bulk upload curriculum entries from a CSV file. Columns: programCode, courseCode, level (LEVEL_100 ... or 100 ...), semester (FIRST | SECOND, optional), isCore (true | false, default true). Upserts by programCode + courseCode. Valid rows are saved; rejected rows are listed with the reason. Pass dryRun=true to validate and see the counts without saving.",
+        "operationId": "bulkUploadProgramCourses",
+        "parameters": [
+          {
+            "name": "dryRun",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": false
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "file": {
+                    "type": "string",
+                    "format": "binary"
+                  }
+                },
+                "required": [
+                  "file"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/BulkUploadResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/program-courses/bulk-upload/array": {
+      "post": {
+        "tags": [
+          "program-course-controller"
+        ],
+        "summary": "Bulk upload curriculum entries from a JSON array. Rows use the CSV column names. Pass dryRun=true to validate and see the counts without saving.",
+        "operationId": "bulkUploadProgramCoursesArray",
+        "parameters": [
+          {
+            "name": "dryRun",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": false
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BulkUploadProgramCourseArrayRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/BulkUploadResponse"
                 }
               }
             }
@@ -823,6 +1308,98 @@
               "*/*": {
                 "schema": {
                   "$ref": "#/components/schemas/CreateLecturerResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/lecturers/bulk-upload": {
+      "post": {
+        "tags": [
+          "lecturer-controller"
+        ],
+        "summary": "Bulk upload lecturers from a CSV file. Columns: lecturerStaffNumber, lecturerFirstName, lecturerLastName, lecturerEmail, departmentCode. Upserts by lecturerStaffNumber. The name and email columns are optional, a blank cell clears a stored value and a missing column keeps it; a lecturer without a name is shown by staff number. Valid rows are saved; rejected rows are listed with the reason. Pass dryRun=true to validate and see the counts without saving.",
+        "operationId": "bulkUploadLecturers",
+        "parameters": [
+          {
+            "name": "dryRun",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": false
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "file": {
+                    "type": "string",
+                    "format": "binary"
+                  }
+                },
+                "required": [
+                  "file"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/BulkUploadResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/lecturers/bulk-upload/array": {
+      "post": {
+        "tags": [
+          "lecturer-controller"
+        ],
+        "summary": "Bulk upload lecturers from a JSON array. Rows use the CSV column names. Pass dryRun=true to validate and see the counts without saving.",
+        "operationId": "bulkUploadLecturersArray",
+        "parameters": [
+          {
+            "name": "dryRun",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": false
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BulkUploadLecturerArrayRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/BulkUploadResponse"
                 }
               }
             }
@@ -891,44 +1468,13 @@
         }
       }
     },
-    "/api/enrollments/bulk": {
+    "/api/enrollments/bulk-upload": {
       "post": {
         "tags": [
           "enrollment-controller"
         ],
-        "summary": "Endpoint to bulk create students and enroll them into sections",
-        "operationId": "bulkEnroll",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/BulkEnrollmentRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "*/*": {
-                "schema": {
-                  "$ref": "#/components/schemas/BulkEnrollmentResponse"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/enrollments/bulk/upload": {
-      "post": {
-        "tags": [
-          "enrollment-controller"
-        ],
-        "summary": "Endpoint to bulk enroll students from a CSV file. Expected columns: studentMatriculationNumber, studentFirstName, studentLastName, studentEmail, studentLevel, studentDepartment, courseSection",
-        "operationId": "bulkEnrollFromFile",
+        "summary": "Bulk upload enrollments for one academic period from a CSV file. Columns: studentMatriculationNumber, courseCode, sectionName. Students and sections must already exist. Valid rows are saved; rejected rows are listed with the reason. Pass dryRun=true to validate and see the counts without saving.",
+        "operationId": "bulkUploadEnrollments",
         "parameters": [
           {
             "name": "academicPeriodId",
@@ -937,6 +1483,15 @@
             "schema": {
               "type": "string",
               "format": "uuid"
+            }
+          },
+          {
+            "name": "dryRun",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": false
             }
           }
         ],
@@ -964,7 +1519,49 @@
             "content": {
               "*/*": {
                 "schema": {
-                  "$ref": "#/components/schemas/BulkEnrollmentResponse"
+                  "$ref": "#/components/schemas/BulkUploadResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/enrollments/bulk-upload/array": {
+      "post": {
+        "tags": [
+          "enrollment-controller"
+        ],
+        "summary": "Bulk upload enrollments for one academic period from a JSON array. Rows use the CSV column names. Pass dryRun=true to validate and see the counts without saving.",
+        "operationId": "bulkUploadEnrollmentsArray",
+        "parameters": [
+          {
+            "name": "dryRun",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": false
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BulkUploadEnrollmentArrayRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/BulkUploadResponse"
                 }
               }
             }
@@ -1002,6 +1599,98 @@
         }
       }
     },
+    "/api/departments/bulk-upload": {
+      "post": {
+        "tags": [
+          "department-controller"
+        ],
+        "summary": "Bulk upload departments from a CSV file. Columns: departmentCode, departmentName, departmentHeadStaffNumber (optional). Upserts by departmentCode. Valid rows are saved; rejected rows are listed with the reason. Pass dryRun=true to validate and see the counts without saving.",
+        "operationId": "bulkUploadDepartments",
+        "parameters": [
+          {
+            "name": "dryRun",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": false
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "file": {
+                    "type": "string",
+                    "format": "binary"
+                  }
+                },
+                "required": [
+                  "file"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/BulkUploadResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/departments/bulk-upload/array": {
+      "post": {
+        "tags": [
+          "department-controller"
+        ],
+        "summary": "Bulk upload departments from a JSON array. Rows use the CSV column names. Pass dryRun=true to validate and see the counts without saving.",
+        "operationId": "bulkUploadDepartmentsArray",
+        "parameters": [
+          {
+            "name": "dryRun",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": false
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BulkUploadDepartmentArrayRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/BulkUploadResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/courses/create": {
       "post": {
         "tags": [
@@ -1025,6 +1714,98 @@
               "*/*": {
                 "schema": {
                   "$ref": "#/components/schemas/CreateCourseResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/courses/bulk-upload": {
+      "post": {
+        "tags": [
+          "course-controller"
+        ],
+        "summary": "Bulk upload courses from a CSV file. Columns: courseCode, courseName, courseUnit, courseLevel (LEVEL_100 ... or 100 ...), departmentCode, courseDescription. Upserts by courseCode; courseUnit and courseLevel are required only for new courses. Valid rows are saved; rejected rows are listed with the reason. Pass dryRun=true to validate and see the counts without saving.",
+        "operationId": "bulkUploadCourses",
+        "parameters": [
+          {
+            "name": "dryRun",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": false
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "file": {
+                    "type": "string",
+                    "format": "binary"
+                  }
+                },
+                "required": [
+                  "file"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/BulkUploadResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/courses/bulk-upload/array": {
+      "post": {
+        "tags": [
+          "course-controller"
+        ],
+        "summary": "Bulk upload courses from a JSON array. Rows use the CSV column names. Pass dryRun=true to validate and see the counts without saving.",
+        "operationId": "bulkUploadCoursesArray",
+        "parameters": [
+          {
+            "name": "dryRun",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": false
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BulkUploadCourseArrayRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/BulkUploadResponse"
                 }
               }
             }
@@ -1115,6 +1896,38 @@
               "*/*": {
                 "schema": {
                   "$ref": "#/components/schemas/ReadTimeslotResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/time-table/generate/{jobId}": {
+      "get": {
+        "tags": [
+          "timetable-controller"
+        ],
+        "summary": "Check on a queued generation.",
+        "operationId": "getGenerationStatus",
+        "parameters": [
+          {
+            "name": "jobId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/TimetableJobStatusResponse"
                 }
               }
             }
@@ -1366,6 +2179,109 @@
         }
       }
     },
+    "/api/programs/stats": {
+      "get": {
+        "tags": [
+          "program-controller"
+        ],
+        "summary": "Headline figures for the programmes page: total, active and inactive programmes plus the school's department count.",
+        "operationId": "readStats",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProgramStatsResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/programs/read": {
+      "get": {
+        "tags": [
+          "program-controller"
+        ],
+        "summary": "Paged, filterable list of programmes. 'programName' matches as a case-insensitive substring; 'page' defaults to 0 and 'size' to 20 (max 100).",
+        "operationId": "readProgram",
+        "parameters": [
+          {
+            "name": "request",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/ReadProgramRequest"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReadProgramResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/program-courses/read": {
+      "get": {
+        "tags": [
+          "program-course-controller"
+        ],
+        "operationId": "readProgramCourse",
+        "parameters": [
+          {
+            "name": "request",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/ReadProgramCourseRequest"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReadProgramCourseResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/onboarding/guide": {
+      "get": {
+        "tags": [
+          "onboarding-controller"
+        ],
+        "summary": "The steps to set a school up, in order: each bulk upload with its endpoint, CSV columns and dependencies, then creating an academic period and generating the timetable. Each step says whether the caller's school has done it and whether it is ready to do.",
+        "operationId": "readGuide",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/OnboardingGuideResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/lecturers/read": {
       "get": {
         "tags": [
@@ -1487,6 +2403,27 @@
         }
       }
     },
+    "/api/dashboard/stats": {
+      "get": {
+        "tags": [
+          "dashboard-controller"
+        ],
+        "summary": "Headline figures for the dashboard: the current academic period and live counts of courses, lecturers, rooms and students for the caller's school.",
+        "operationId": "readStats_1",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/DashboardStatsResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/courses/read": {
       "get": {
         "tags": [
@@ -1510,6 +2447,37 @@
               "*/*": {
                 "schema": {
                   "$ref": "#/components/schemas/ReadCourseResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/activities/read": {
+      "get": {
+        "tags": [
+          "activity-controller"
+        ],
+        "summary": "The caller's school's most recent activities, newest first. 'limit' is 1-50 and defaults to 10.",
+        "operationId": "readActivities",
+        "parameters": [
+          {
+            "name": "request",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/ReadActivityRequest"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReadActivityResponse"
                 }
               }
             }
@@ -1570,6 +2538,37 @@
               "*/*": {
                 "schema": {
                   "$ref": "#/components/schemas/DeleteTimeslotResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/testing/reset": {
+      "delete": {
+        "tags": [
+          "testing-controller"
+        ],
+        "summary": "DEVELOPMENT ONLY. Permanently deletes all of the caller's school data (departments, lecturers, rooms, programmes, courses, curriculum, students, academic periods, sections, events, enrollments, timeslots, activity). The school and its login are kept. Pass confirm=DELETE-ALL-MY-DATA. Returns 404 unless the server runs with TESTING_RESET_ENABLED=true.",
+        "operationId": "reset",
+        "parameters": [
+          {
+            "name": "confirm",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResetResponse"
                 }
               }
             }
@@ -1750,6 +2749,66 @@
               "*/*": {
                 "schema": {
                   "$ref": "#/components/schemas/DeleteRoomResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/programs/delete": {
+      "delete": {
+        "tags": [
+          "program-controller"
+        ],
+        "operationId": "deleteProgram",
+        "parameters": [
+          {
+            "name": "request",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/DeleteProgramRequest"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeleteProgramResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/program-courses/delete": {
+      "delete": {
+        "tags": [
+          "program-course-controller"
+        ],
+        "operationId": "deleteProgramCourse",
+        "parameters": [
+          {
+            "name": "request",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/DeleteProgramCourseRequest"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeleteProgramCourseResponse"
                 }
               }
             }
@@ -2075,6 +3134,10 @@
           "studentDepartmentId": {
             "type": "string",
             "format": "uuid"
+          },
+          "studentProgramId": {
+            "type": "string",
+            "format": "uuid"
           }
         },
         "required": [
@@ -2094,6 +3157,9 @@
           "studentLastName": {
             "type": "string"
           },
+          "studentDisplayName": {
+            "type": "string"
+          },
           "studentMatriculationNumber": {
             "type": "string"
           },
@@ -2111,6 +3177,10 @@
             ]
           },
           "studentDepartmentId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "studentProgramId": {
             "type": "string",
             "format": "uuid"
           },
@@ -2174,6 +3244,38 @@
           "sectionAcademicPeriodId": {
             "type": "string",
             "format": "uuid"
+          },
+          "sectionDurationMinutes": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 1
+          },
+          "sectionUnits": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 1
+          },
+          "sectionSplit": {
+            "type": "string",
+            "enum": [
+              "YES",
+              "NO",
+              "MAYBE"
+            ]
+          },
+          "sectionEventType": {
+            "type": "string",
+            "enum": [
+              "CLASS",
+              "LAB"
+            ]
+          },
+          "relatedToSectionId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "removeRelatedTo": {
+            "type": "boolean"
           }
         },
         "required": [
@@ -2207,6 +3309,33 @@
               "ACTIVE",
               "INACTIVE"
             ]
+          },
+          "sectionDurationMinutes": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "sectionUnits": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "sectionSplit": {
+            "type": "string",
+            "enum": [
+              "YES",
+              "NO",
+              "MAYBE"
+            ]
+          },
+          "sectionEventType": {
+            "type": "string",
+            "enum": [
+              "CLASS",
+              "LAB"
+            ]
+          },
+          "sectionMergedIntoId": {
+            "type": "string",
+            "format": "uuid"
           }
         }
       },
@@ -2377,6 +3506,67 @@
           }
         }
       },
+      "ConfigureWebhookRequest": {
+        "type": "object",
+        "properties": {
+          "webhookUrl": {
+            "type": "string",
+            "maxLength": 2000,
+            "minLength": 0
+          },
+          "webhookEnabled": {
+            "type": "boolean"
+          },
+          "rotateSecret": {
+            "type": "boolean"
+          }
+        }
+      },
+      "WebhookConfigResponse": {
+        "type": "object",
+        "properties": {
+          "responseCode": {
+            "type": "string"
+          },
+          "error": {
+            "type": "boolean"
+          },
+          "timestamp": {
+            "type": "string"
+          },
+          "path": {
+            "type": "string"
+          },
+          "responseMessage": {
+            "type": "string"
+          },
+          "data": {
+            "$ref": "#/components/schemas/WebhookConfigResponseData"
+          }
+        }
+      },
+      "WebhookConfigResponseData": {
+        "type": "object",
+        "properties": {
+          "webhookUrl": {
+            "type": "string"
+          },
+          "webhookEnabled": {
+            "type": "boolean"
+          },
+          "secretConfigured": {
+            "type": "boolean"
+          },
+          "webhookSecret": {
+            "type": "string",
+            "description": "Shown once, when created or rotated. Store it now — it cannot be read back.",
+            "readOnly": true
+          },
+          "note": {
+            "type": "string"
+          }
+        }
+      },
       "UpdateSchoolRequest": {
         "type": "object",
         "properties": {
@@ -2400,6 +3590,18 @@
               "INACTIVE",
               "SUSPENDED"
             ]
+          },
+          "schoolDayStartHour": {
+            "type": "string"
+          },
+          "schoolDayEndHour": {
+            "type": "string"
+          },
+          "schoolBreakStartHour": {
+            "type": "string"
+          },
+          "schoolBreakEndHour": {
+            "type": "string"
           }
         },
         "required": [
@@ -2432,6 +3634,24 @@
               "INACTIVE",
               "SUSPENDED"
             ]
+          },
+          "schoolDayStartHour": {
+            "type": "string"
+          },
+          "schoolDayEndHour": {
+            "type": "string"
+          },
+          "schoolBreakStartHour": {
+            "type": "string"
+          },
+          "schoolBreakEndHour": {
+            "type": "string"
+          },
+          "webhookUrl": {
+            "type": "string"
+          },
+          "webhookEnabled": {
+            "type": "boolean"
           }
         }
       },
@@ -2564,6 +3784,141 @@
           }
         }
       },
+      "UpdateProgramRequest": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "programName": {
+            "type": "string"
+          },
+          "programCode": {
+            "type": "string",
+            "maxLength": 20,
+            "minLength": 0
+          },
+          "programDepartmentId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "programCoordinatorId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "programLevel": {
+            "type": "string",
+            "enum": [
+              "UNDERGRADUATE",
+              "POSTGRADUATE"
+            ]
+          },
+          "programDuration": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 1
+          },
+          "programDescription": {
+            "type": "string"
+          },
+          "programStatus": {
+            "type": "string",
+            "enum": [
+              "ACTIVE",
+              "INACTIVE"
+            ]
+          }
+        },
+        "required": [
+          "id"
+        ]
+      },
+      "ProgramResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "programName": {
+            "type": "string"
+          },
+          "programCode": {
+            "type": "string"
+          },
+          "programDepartmentId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "programDepartmentName": {
+            "type": "string"
+          },
+          "programCoordinatorId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "programCoordinatorName": {
+            "type": "string"
+          },
+          "programLevel": {
+            "type": "string",
+            "enum": [
+              "UNDERGRADUATE",
+              "POSTGRADUATE"
+            ]
+          },
+          "programDuration": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "programDescription": {
+            "type": "string"
+          },
+          "programStatus": {
+            "type": "string",
+            "enum": [
+              "ACTIVE",
+              "INACTIVE"
+            ]
+          },
+          "studentCount": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "UpdateProgramResponse": {
+        "type": "object",
+        "properties": {
+          "responseCode": {
+            "type": "string"
+          },
+          "error": {
+            "type": "boolean"
+          },
+          "timestamp": {
+            "type": "string"
+          },
+          "path": {
+            "type": "string"
+          },
+          "responseMessage": {
+            "type": "string"
+          },
+          "data": {
+            "$ref": "#/components/schemas/UpdateProgramResponseData"
+          }
+        }
+      },
+      "UpdateProgramResponseData": {
+        "type": "object",
+        "properties": {
+          "program": {
+            "$ref": "#/components/schemas/ProgramResponse"
+          }
+        }
+      },
       "UpdateLecturerRequest": {
         "type": "object",
         "properties": {
@@ -2607,6 +3962,9 @@
             "type": "string"
           },
           "lecturerLastName": {
+            "type": "string"
+          },
+          "lecturerDisplayName": {
             "type": "string"
           },
           "lecturerEmail": {
@@ -2831,6 +4189,13 @@
           },
           "departmentName": {
             "type": "string"
+          },
+          "departmentCode": {
+            "type": "string"
+          },
+          "departmentHeadId": {
+            "type": "string",
+            "format": "uuid"
           }
         },
         "required": [
@@ -2846,6 +4211,13 @@
           },
           "departmentName": {
             "type": "string"
+          },
+          "departmentCode": {
+            "type": "string"
+          },
+          "departmentHeadId": {
+            "type": "string",
+            "format": "uuid"
           },
           "departmentStatus": {
             "type": "string",
@@ -2905,6 +4277,10 @@
           "courseDescription": {
             "type": "string"
           },
+          "courseDepartmentId": {
+            "type": "string",
+            "format": "uuid"
+          },
           "courseUnit": {
             "type": "integer",
             "format": "int32",
@@ -2945,6 +4321,13 @@
           "courseUnit": {
             "type": "integer",
             "format": "int32"
+          },
+          "courseDepartmentId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "courseDepartmentName": {
+            "type": "string"
           },
           "courseLevel": {
             "type": "string",
@@ -3164,209 +4547,59 @@
           "academicPeriodId"
         ]
       },
-      "TimetableEntryDTO": {
+      "GenerateTimetableAcceptedResponse": {
         "type": "object",
         "properties": {
-          "eventId": {
+          "responseCode": {
+            "type": "string"
+          },
+          "error": {
+            "type": "boolean"
+          },
+          "timestamp": {
+            "type": "string"
+          },
+          "path": {
+            "type": "string"
+          },
+          "responseMessage": {
+            "type": "string"
+          },
+          "data": {
+            "$ref": "#/components/schemas/GenerateTimetableAcceptedResponseData"
+          }
+        }
+      },
+      "GenerateTimetableAcceptedResponseData": {
+        "type": "object",
+        "properties": {
+          "jobId": {
             "type": "string",
             "format": "uuid"
           },
-          "courseCode": {
+          "status": {
             "type": "string"
           },
-          "courseName": {
-            "type": "string"
-          },
-          "sectionName": {
-            "type": "string"
-          },
-          "lecturerName": {
-            "type": "string"
-          },
-          "day": {
-            "type": "string"
-          },
-          "startTime": {
-            "type": "string"
-          },
-          "endTime": {
-            "type": "string"
-          },
-          "room": {
-            "type": "string"
-          },
-          "durationMinutes": {
-            "type": "integer",
-            "format": "int64"
-          },
-          "eventType": {
-            "type": "string"
-          }
-        }
-      },
-      "TimetableResponse": {
-        "type": "object",
-        "properties": {
-          "responseCode": {
-            "type": "string"
-          },
-          "error": {
-            "type": "boolean"
-          },
-          "timestamp": {
-            "type": "string"
-          },
-          "path": {
-            "type": "string"
-          },
-          "responseMessage": {
-            "type": "string"
-          },
-          "entries": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/TimetableEntryDTO"
-            }
-          },
-          "totalEvents": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "scheduledEvents": {
-            "type": "integer",
-            "format": "int32"
-          }
-        }
-      },
-      "BulkUploadTimetableResponse": {
-        "type": "object",
-        "properties": {
-          "responseCode": {
-            "type": "string"
-          },
-          "error": {
-            "type": "boolean"
-          },
-          "timestamp": {
-            "type": "string"
-          },
-          "path": {
-            "type": "string"
-          },
-          "responseMessage": {
-            "type": "string"
-          }
-        }
-      },
-      "BulkTimetableRow": {
-        "type": "object",
-        "properties": {
-          "courseCode": {
-            "type": "string",
-            "minLength": 1
-          },
-          "courseTitle": {
-            "type": "string",
-            "minLength": 1
-          },
-          "courseUnit": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "courseLevel": {
-            "type": "string",
-            "minLength": 1
-          },
-          "department": {
-            "type": "string",
-            "minLength": 1
-          },
-          "lecturerStaffNumber": {
-            "type": "string",
-            "minLength": 1
-          },
-          "lecturerFirstName": {
-            "type": "string",
-            "minLength": 1
-          },
-          "lecturerLastName": {
-            "type": "string",
-            "minLength": 1
-          },
-          "lecturerEmail": {
-            "type": "string",
-            "format": "email",
-            "minLength": 1
-          },
-          "sectionName": {
-            "type": "string",
-            "minLength": 1
-          },
-          "sectionEnrollmentSize": {
-            "type": "string",
-            "minLength": 1
-          },
-          "eventDurationMinutes": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "eventType": {
-            "type": "string",
-            "minLength": 1
-          },
-          "rooms": {
-            "type": "string"
-          },
-          "timeslot": {
-            "type": "string"
-          }
-        },
-        "required": [
-          "courseCode",
-          "courseLevel",
-          "courseTitle",
-          "courseUnit",
-          "department",
-          "eventDurationMinutes",
-          "eventType",
-          "lecturerEmail",
-          "lecturerFirstName",
-          "lecturerLastName",
-          "lecturerStaffNumber",
-          "sectionEnrollmentSize",
-          "sectionName"
-        ]
-      },
-      "BulkUploadTimetableArrayRequest": {
-        "type": "object",
-        "properties": {
           "academicPeriodId": {
             "type": "string",
             "format": "uuid"
           },
-          "rows": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/BulkTimetableRow"
-            },
-            "minItems": 1
+          "webhookConfigured": {
+            "type": "boolean"
+          },
+          "statusUrl": {
+            "type": "string"
           }
-        },
-        "required": [
-          "academicPeriodId",
-          "rows"
-        ]
+        }
       },
       "CreateStudentRequest": {
         "type": "object",
         "properties": {
           "studentFirstName": {
-            "type": "string",
-            "minLength": 1
+            "type": "string"
           },
           "studentLastName": {
-            "type": "string",
-            "minLength": 1
+            "type": "string"
           },
           "studentMatriculationNumber": {
             "type": "string",
@@ -3374,8 +4607,7 @@
           },
           "studentEmail": {
             "type": "string",
-            "format": "email",
-            "minLength": 1
+            "format": "email"
           },
           "studentLevel": {
             "type": "string",
@@ -3390,13 +4622,14 @@
           "studentDepartmentId": {
             "type": "string",
             "format": "uuid"
+          },
+          "studentProgramId": {
+            "type": "string",
+            "format": "uuid"
           }
         },
         "required": [
           "studentDepartmentId",
-          "studentEmail",
-          "studentFirstName",
-          "studentLastName",
           "studentLevel",
           "studentMatriculationNumber"
         ]
@@ -3432,6 +4665,149 @@
           }
         }
       },
+      "BulkUploadResponse": {
+        "type": "object",
+        "properties": {
+          "responseCode": {
+            "type": "string"
+          },
+          "error": {
+            "type": "boolean"
+          },
+          "timestamp": {
+            "type": "string"
+          },
+          "path": {
+            "type": "string"
+          },
+          "responseMessage": {
+            "type": "string"
+          },
+          "data": {
+            "$ref": "#/components/schemas/BulkUploadResponseData"
+          }
+        }
+      },
+      "BulkUploadResponseData": {
+        "type": "object",
+        "properties": {
+          "dataset": {
+            "type": "string",
+            "enum": [
+              "DEPARTMENTS",
+              "LECTURERS",
+              "ROOMS",
+              "PROGRAMS",
+              "COURSES",
+              "CURRICULUM",
+              "STUDENTS",
+              "SECTIONS",
+              "ENROLLMENTS"
+            ]
+          },
+          "dryRun": {
+            "type": "boolean"
+          },
+          "submitted": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "created": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "updated": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "unchanged": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "skipped": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "errors": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BulkUploadRowIssue"
+            }
+          },
+          "warnings": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BulkUploadRowIssue"
+            }
+          }
+        }
+      },
+      "BulkUploadRowIssue": {
+        "type": "object",
+        "properties": {
+          "row": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "column": {
+            "type": "string"
+          },
+          "value": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      },
+      "BulkStudentRow": {
+        "type": "object",
+        "properties": {
+          "studentMatriculationNumber": {
+            "type": "string",
+            "minLength": 1
+          },
+          "studentFirstName": {
+            "type": "string"
+          },
+          "studentLastName": {
+            "type": "string"
+          },
+          "studentEmail": {
+            "type": "string",
+            "format": "email"
+          },
+          "studentLevel": {
+            "type": "string",
+            "minLength": 1
+          },
+          "programCode": {
+            "type": "string"
+          },
+          "departmentCode": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "studentLevel",
+          "studentMatriculationNumber"
+        ]
+      },
+      "BulkUploadStudentArrayRequest": {
+        "type": "object",
+        "properties": {
+          "rows": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BulkStudentRow"
+            },
+            "minItems": 1
+          }
+        },
+        "required": [
+          "rows"
+        ]
+      },
       "CreateSectionRequest": {
         "type": "object",
         "properties": {
@@ -3447,6 +4823,35 @@
             "type": "string"
           },
           "sectionAcademicPeriodId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "sectionDurationMinutes": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 1
+          },
+          "sectionUnits": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 1
+          },
+          "sectionSplit": {
+            "type": "string",
+            "enum": [
+              "YES",
+              "NO",
+              "MAYBE"
+            ]
+          },
+          "sectionEventType": {
+            "type": "string",
+            "enum": [
+              "CLASS",
+              "LAB"
+            ]
+          },
+          "relatedToSectionId": {
             "type": "string",
             "format": "uuid"
           }
@@ -3487,6 +4892,81 @@
             "$ref": "#/components/schemas/SectionResponse"
           }
         }
+      },
+      "BulkSectionRow": {
+        "type": "object",
+        "properties": {
+          "courseCode": {
+            "type": "string",
+            "minLength": 1
+          },
+          "sectionName": {
+            "type": "string",
+            "minLength": 1
+          },
+          "sectionEnrollmentSize": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 1
+          },
+          "lecturerStaffNumbers": {
+            "type": "string",
+            "minLength": 1
+          },
+          "sectionDurationMinutes": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 1
+          },
+          "sectionUnits": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 1
+          },
+          "eventType": {
+            "type": "string",
+            "minLength": 1
+          },
+          "split": {
+            "type": "string"
+          },
+          "relatedTo": {
+            "type": "string"
+          },
+          "rooms": {
+            "type": "string"
+          },
+          "timeslot": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "courseCode",
+          "eventType",
+          "lecturerStaffNumbers",
+          "sectionDurationMinutes",
+          "sectionName"
+        ]
+      },
+      "BulkUploadSectionArrayRequest": {
+        "type": "object",
+        "properties": {
+          "academicPeriodId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "rows": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BulkSectionRow"
+            },
+            "minItems": 1
+          }
+        },
+        "required": [
+          "academicPeriodId",
+          "rows"
+        ]
       },
       "CreateSectionTimeslotRequest": {
         "type": "object",
@@ -3584,6 +5064,44 @@
           }
         }
       },
+      "WebhookTestResponse": {
+        "type": "object",
+        "properties": {
+          "responseCode": {
+            "type": "string"
+          },
+          "error": {
+            "type": "boolean"
+          },
+          "timestamp": {
+            "type": "string"
+          },
+          "path": {
+            "type": "string"
+          },
+          "responseMessage": {
+            "type": "string"
+          },
+          "data": {
+            "$ref": "#/components/schemas/WebhookTestResponseData"
+          }
+        }
+      },
+      "WebhookTestResponseData": {
+        "type": "object",
+        "properties": {
+          "delivered": {
+            "type": "boolean"
+          },
+          "statusCode": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      },
       "CreateSchoolRequest": {
         "type": "object",
         "properties": {
@@ -3614,12 +5132,20 @@
           },
           "schoolDayEndHour": {
             "type": "string"
+          },
+          "schoolBreakStartHour": {
+            "type": "string"
+          },
+          "schoolBreakEndHour": {
+            "type": "string"
           }
         },
         "required": [
           "schoolAddress",
           "schoolAdminEmail",
           "schoolAdminPassword",
+          "schoolBreakEndHour",
+          "schoolBreakStartHour",
           "schoolDayEndHour",
           "schoolDayStartHour",
           "schoolName",
@@ -3721,35 +5247,15 @@
           }
         }
       },
-      "BulkUploadRoomResponse": {
-        "type": "object",
-        "properties": {
-          "responseCode": {
-            "type": "string"
-          },
-          "error": {
-            "type": "boolean"
-          },
-          "timestamp": {
-            "type": "string"
-          },
-          "path": {
-            "type": "string"
-          },
-          "responseMessage": {
-            "type": "string"
-          }
-        }
-      },
       "BulkRoomRow": {
         "type": "object",
         "properties": {
-          "roomBuilding": {
-            "type": "string"
-          },
           "roomNumber": {
             "type": "string",
             "minLength": 1
+          },
+          "roomBuilding": {
+            "type": "string"
           },
           "roomCapacity": {
             "type": "integer",
@@ -3779,6 +5285,306 @@
           "rooms"
         ]
       },
+      "CreateProgramRequest": {
+        "type": "object",
+        "properties": {
+          "programName": {
+            "type": "string",
+            "minLength": 1
+          },
+          "programCode": {
+            "type": "string",
+            "maxLength": 20,
+            "minLength": 0
+          },
+          "programDepartmentId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "programCoordinatorId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "programLevel": {
+            "type": "string",
+            "enum": [
+              "UNDERGRADUATE",
+              "POSTGRADUATE"
+            ]
+          },
+          "programDuration": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 1
+          },
+          "programDescription": {
+            "type": "string",
+            "minLength": 1
+          },
+          "programStatus": {
+            "type": "string",
+            "enum": [
+              "ACTIVE",
+              "INACTIVE"
+            ]
+          }
+        },
+        "required": [
+          "programCoordinatorId",
+          "programDepartmentId",
+          "programDescription",
+          "programDuration",
+          "programLevel",
+          "programName"
+        ]
+      },
+      "CreateProgramResponse": {
+        "type": "object",
+        "properties": {
+          "responseCode": {
+            "type": "string"
+          },
+          "error": {
+            "type": "boolean"
+          },
+          "timestamp": {
+            "type": "string"
+          },
+          "path": {
+            "type": "string"
+          },
+          "responseMessage": {
+            "type": "string"
+          },
+          "data": {
+            "$ref": "#/components/schemas/CreateProgramResponseData"
+          }
+        }
+      },
+      "CreateProgramResponseData": {
+        "type": "object",
+        "properties": {
+          "program": {
+            "$ref": "#/components/schemas/ProgramResponse"
+          }
+        }
+      },
+      "BulkProgramRow": {
+        "type": "object",
+        "properties": {
+          "programCode": {
+            "type": "string",
+            "maxLength": 20,
+            "minLength": 0
+          },
+          "programName": {
+            "type": "string",
+            "minLength": 1
+          },
+          "departmentCode": {
+            "type": "string",
+            "minLength": 1
+          },
+          "programCoordinatorStaffNumber": {
+            "type": "string"
+          },
+          "programLevel": {
+            "type": "string"
+          },
+          "programDuration": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 1
+          },
+          "programDescription": {
+            "type": "string"
+          },
+          "programStatus": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "departmentCode",
+          "programCode",
+          "programName"
+        ]
+      },
+      "BulkUploadProgramArrayRequest": {
+        "type": "object",
+        "properties": {
+          "programs": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BulkProgramRow"
+            },
+            "minItems": 1
+          }
+        },
+        "required": [
+          "programs"
+        ]
+      },
+      "CreateProgramCourseRequest": {
+        "type": "object",
+        "properties": {
+          "programId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "courseId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "level": {
+            "type": "string",
+            "enum": [
+              "LEVEL_100",
+              "LEVEL_200",
+              "LEVEL_300",
+              "LEVEL_400",
+              "LEVEL_500"
+            ]
+          },
+          "semester": {
+            "type": "string",
+            "enum": [
+              "FIRST",
+              "SECOND"
+            ]
+          },
+          "isCore": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "courseId",
+          "level",
+          "programId"
+        ]
+      },
+      "CreateProgramCourseResponse": {
+        "type": "object",
+        "properties": {
+          "responseCode": {
+            "type": "string"
+          },
+          "error": {
+            "type": "boolean"
+          },
+          "timestamp": {
+            "type": "string"
+          },
+          "path": {
+            "type": "string"
+          },
+          "responseMessage": {
+            "type": "string"
+          },
+          "data": {
+            "$ref": "#/components/schemas/CreateProgramCourseResponseData"
+          }
+        }
+      },
+      "CreateProgramCourseResponseData": {
+        "type": "object",
+        "properties": {
+          "programCourse": {
+            "$ref": "#/components/schemas/ProgramCourseResponse"
+          }
+        }
+      },
+      "ProgramCourseResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "programId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "programCode": {
+            "type": "string"
+          },
+          "programName": {
+            "type": "string"
+          },
+          "courseId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "courseCode": {
+            "type": "string"
+          },
+          "courseName": {
+            "type": "string"
+          },
+          "level": {
+            "type": "string",
+            "enum": [
+              "LEVEL_100",
+              "LEVEL_200",
+              "LEVEL_300",
+              "LEVEL_400",
+              "LEVEL_500"
+            ]
+          },
+          "semester": {
+            "type": "string",
+            "enum": [
+              "FIRST",
+              "SECOND"
+            ]
+          },
+          "isCore": {
+            "type": "boolean"
+          }
+        }
+      },
+      "BulkProgramCourseRow": {
+        "type": "object",
+        "properties": {
+          "programCode": {
+            "type": "string",
+            "minLength": 1
+          },
+          "courseCode": {
+            "type": "string",
+            "minLength": 1
+          },
+          "level": {
+            "type": "string",
+            "minLength": 1
+          },
+          "semester": {
+            "type": "string"
+          },
+          "isCore": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "courseCode",
+          "level",
+          "programCode"
+        ]
+      },
+      "BulkUploadProgramCourseArrayRequest": {
+        "type": "object",
+        "properties": {
+          "rows": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BulkProgramCourseRow"
+            },
+            "minItems": 1
+          }
+        },
+        "required": [
+          "rows"
+        ]
+      },
       "CreateLecturerRequest": {
         "type": "object",
         "properties": {
@@ -3787,17 +5593,14 @@
             "minLength": 1
           },
           "lecturerFirstName": {
-            "type": "string",
-            "minLength": 1
+            "type": "string"
           },
           "lecturerLastName": {
-            "type": "string",
-            "minLength": 1
+            "type": "string"
           },
           "lecturerEmail": {
             "type": "string",
-            "format": "email",
-            "minLength": 1
+            "format": "email"
           },
           "lecturerDepartmentId": {
             "type": "string",
@@ -3806,9 +5609,6 @@
         },
         "required": [
           "lecturerDepartmentId",
-          "lecturerEmail",
-          "lecturerFirstName",
-          "lecturerLastName",
           "lecturerStaffNumber"
         ]
       },
@@ -3842,6 +5642,48 @@
             "$ref": "#/components/schemas/LecturerResponse"
           }
         }
+      },
+      "BulkLecturerRow": {
+        "type": "object",
+        "properties": {
+          "lecturerStaffNumber": {
+            "type": "string",
+            "minLength": 1
+          },
+          "lecturerFirstName": {
+            "type": "string"
+          },
+          "lecturerLastName": {
+            "type": "string"
+          },
+          "lecturerEmail": {
+            "type": "string",
+            "format": "email"
+          },
+          "departmentCode": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "departmentCode",
+          "lecturerStaffNumber"
+        ]
+      },
+      "BulkUploadLecturerArrayRequest": {
+        "type": "object",
+        "properties": {
+          "rows": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BulkLecturerRow"
+            },
+            "minItems": 1
+          }
+        },
+        "required": [
+          "rows"
+        ]
       },
       "CreateEventRequest": {
         "type": "object",
@@ -3950,7 +5792,29 @@
           }
         }
       },
-      "BulkEnrollmentRequest": {
+      "BulkEnrollmentRow": {
+        "type": "object",
+        "properties": {
+          "studentMatriculationNumber": {
+            "type": "string",
+            "minLength": 1
+          },
+          "courseCode": {
+            "type": "string",
+            "minLength": 1
+          },
+          "sectionName": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "courseCode",
+          "sectionName",
+          "studentMatriculationNumber"
+        ]
+      },
+      "BulkUploadEnrollmentArrayRequest": {
         "type": "object",
         "properties": {
           "academicPeriodId": {
@@ -3970,116 +5834,24 @@
           "rows"
         ]
       },
-      "BulkEnrollmentRow": {
-        "type": "object",
-        "properties": {
-          "studentMatriculationNumber": {
-            "type": "string",
-            "minLength": 1
-          },
-          "studentFirstName": {
-            "type": "string",
-            "minLength": 1
-          },
-          "studentLastName": {
-            "type": "string",
-            "minLength": 1
-          },
-          "studentEmail": {
-            "type": "string",
-            "format": "email",
-            "minLength": 1
-          },
-          "studentLevel": {
-            "type": "string",
-            "enum": [
-              "LEVEL_100",
-              "LEVEL_200",
-              "LEVEL_300",
-              "LEVEL_400",
-              "LEVEL_500"
-            ]
-          },
-          "studentDepartment": {
-            "type": "string",
-            "minLength": 1
-          },
-          "courseSection": {
-            "type": "string",
-            "minLength": 1
-          }
-        },
-        "required": [
-          "courseSection",
-          "studentDepartment",
-          "studentEmail",
-          "studentFirstName",
-          "studentLastName",
-          "studentLevel",
-          "studentMatriculationNumber"
-        ]
-      },
-      "BulkEnrollmentResponse": {
-        "type": "object",
-        "properties": {
-          "responseCode": {
-            "type": "string"
-          },
-          "error": {
-            "type": "boolean"
-          },
-          "timestamp": {
-            "type": "string"
-          },
-          "path": {
-            "type": "string"
-          },
-          "responseMessage": {
-            "type": "string"
-          },
-          "data": {
-            "$ref": "#/components/schemas/BulkEnrollmentResponseData"
-          }
-        }
-      },
-      "BulkEnrollmentResponseData": {
-        "type": "object",
-        "properties": {
-          "totalProcessed": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "totalCreated": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "totalSkipped": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "enrollments": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/EnrollmentResponse"
-            }
-          },
-          "skippedReasons": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
-          }
-        }
-      },
       "CreateDepartmentRequest": {
         "type": "object",
         "properties": {
           "departmentName": {
             "type": "string",
             "minLength": 1
+          },
+          "departmentCode": {
+            "type": "string",
+            "minLength": 1
+          },
+          "departmentHeadId": {
+            "type": "string",
+            "format": "uuid"
           }
         },
         "required": [
+          "departmentCode",
           "departmentName"
         ]
       },
@@ -4114,6 +5886,42 @@
           }
         }
       },
+      "BulkDepartmentRow": {
+        "type": "object",
+        "properties": {
+          "departmentCode": {
+            "type": "string",
+            "maxLength": 20,
+            "minLength": 0
+          },
+          "departmentName": {
+            "type": "string",
+            "minLength": 1
+          },
+          "departmentHeadStaffNumber": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "departmentCode",
+          "departmentName"
+        ]
+      },
+      "BulkUploadDepartmentArrayRequest": {
+        "type": "object",
+        "properties": {
+          "rows": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BulkDepartmentRow"
+            },
+            "minItems": 1
+          }
+        },
+        "required": [
+          "rows"
+        ]
+      },
       "CreateCourseRequest": {
         "type": "object",
         "properties": {
@@ -4134,6 +5942,10 @@
           },
           "courseDescription": {
             "type": "string"
+          },
+          "courseDepartmentId": {
+            "type": "string",
+            "format": "uuid"
           },
           "courseLevel": {
             "type": "string",
@@ -4183,6 +5995,56 @@
             "$ref": "#/components/schemas/CourseResponse"
           }
         }
+      },
+      "BulkCourseRow": {
+        "type": "object",
+        "properties": {
+          "courseCode": {
+            "type": "string",
+            "maxLength": 20,
+            "minLength": 0
+          },
+          "courseName": {
+            "type": "string",
+            "minLength": 1
+          },
+          "courseUnit": {
+            "type": "integer",
+            "format": "int32",
+            "maximum": 10,
+            "minimum": 1
+          },
+          "courseLevel": {
+            "type": "string"
+          },
+          "departmentCode": {
+            "type": "string",
+            "minLength": 1
+          },
+          "courseDescription": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "courseCode",
+          "courseName",
+          "departmentCode"
+        ]
+      },
+      "BulkUploadCourseArrayRequest": {
+        "type": "object",
+        "properties": {
+          "rows": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BulkCourseRow"
+            },
+            "minItems": 1
+          }
+        },
+        "required": [
+          "rows"
+        ]
       },
       "LoginRequest": {
         "type": "object",
@@ -4346,6 +6208,105 @@
           }
         }
       },
+      "SplitDecisionDTO": {
+        "type": "object",
+        "properties": {
+          "sectionId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "courseCode": {
+            "type": "string"
+          },
+          "sectionName": {
+            "type": "string"
+          },
+          "split": {
+            "type": "boolean"
+          },
+          "eventMinutes": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        }
+      },
+      "TimetableJobStatusResponse": {
+        "type": "object",
+        "properties": {
+          "responseCode": {
+            "type": "string"
+          },
+          "error": {
+            "type": "boolean"
+          },
+          "timestamp": {
+            "type": "string"
+          },
+          "path": {
+            "type": "string"
+          },
+          "responseMessage": {
+            "type": "string"
+          },
+          "data": {
+            "$ref": "#/components/schemas/TimetableJobStatusResponseData"
+          }
+        }
+      },
+      "TimetableJobStatusResponseData": {
+        "type": "object",
+        "properties": {
+          "jobId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "status": {
+            "type": "string"
+          },
+          "academicPeriodId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "submittedAt": {
+            "type": "string"
+          },
+          "startedAt": {
+            "type": "string"
+          },
+          "finishedAt": {
+            "type": "string"
+          },
+          "webhookConfigured": {
+            "type": "boolean"
+          },
+          "totalEvents": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "scheduledEvents": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "feasible": {
+            "type": "boolean"
+          },
+          "stopReason": {
+            "type": "string"
+          },
+          "failureMessage": {
+            "type": "string"
+          },
+          "splitDecisions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SplitDecisionDTO"
+            }
+          }
+        }
+      },
       "DownloadTimetableRequest": {
         "type": "object",
         "properties": {
@@ -4400,6 +6361,10 @@
             ]
           },
           "studentDepartmentId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "studentProgramId": {
             "type": "string",
             "format": "uuid"
           },
@@ -4732,6 +6697,320 @@
           }
         }
       },
+      "ProgramStatsResponse": {
+        "type": "object",
+        "properties": {
+          "responseCode": {
+            "type": "string"
+          },
+          "error": {
+            "type": "boolean"
+          },
+          "timestamp": {
+            "type": "string"
+          },
+          "path": {
+            "type": "string"
+          },
+          "responseMessage": {
+            "type": "string"
+          },
+          "data": {
+            "$ref": "#/components/schemas/ProgramStatsResponseData"
+          }
+        }
+      },
+      "ProgramStatsResponseData": {
+        "type": "object",
+        "properties": {
+          "totalPrograms": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "activePrograms": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "inactivePrograms": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "departments": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "ReadProgramRequest": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "programName": {
+            "type": "string"
+          },
+          "programDepartmentId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "programLevel": {
+            "type": "string",
+            "enum": [
+              "UNDERGRADUATE",
+              "POSTGRADUATE"
+            ]
+          },
+          "programStatus": {
+            "type": "string",
+            "enum": [
+              "ACTIVE",
+              "INACTIVE"
+            ]
+          },
+          "page": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0
+          },
+          "size": {
+            "type": "integer",
+            "format": "int32",
+            "maximum": 100,
+            "minimum": 1
+          }
+        }
+      },
+      "ReadProgramResponse": {
+        "type": "object",
+        "properties": {
+          "responseCode": {
+            "type": "string"
+          },
+          "error": {
+            "type": "boolean"
+          },
+          "timestamp": {
+            "type": "string"
+          },
+          "path": {
+            "type": "string"
+          },
+          "responseMessage": {
+            "type": "string"
+          },
+          "data": {
+            "$ref": "#/components/schemas/ReadProgramResponseData"
+          }
+        }
+      },
+      "ReadProgramResponseData": {
+        "type": "object",
+        "properties": {
+          "programs": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ProgramResponse"
+            }
+          },
+          "page": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "size": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "totalElements": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "totalPages": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "ReadProgramCourseRequest": {
+        "type": "object",
+        "properties": {
+          "programId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "courseId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "level": {
+            "type": "string",
+            "enum": [
+              "LEVEL_100",
+              "LEVEL_200",
+              "LEVEL_300",
+              "LEVEL_400",
+              "LEVEL_500"
+            ]
+          },
+          "semester": {
+            "type": "string",
+            "enum": [
+              "FIRST",
+              "SECOND"
+            ]
+          }
+        }
+      },
+      "ReadProgramCourseResponse": {
+        "type": "object",
+        "properties": {
+          "responseCode": {
+            "type": "string"
+          },
+          "error": {
+            "type": "boolean"
+          },
+          "timestamp": {
+            "type": "string"
+          },
+          "path": {
+            "type": "string"
+          },
+          "responseMessage": {
+            "type": "string"
+          },
+          "data": {
+            "$ref": "#/components/schemas/ReadProgramCourseResponseData"
+          }
+        }
+      },
+      "ReadProgramCourseResponseData": {
+        "type": "object",
+        "properties": {
+          "programCourses": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ProgramCourseResponse"
+            }
+          }
+        }
+      },
+      "OnboardingGuideResponse": {
+        "type": "object",
+        "properties": {
+          "responseCode": {
+            "type": "string"
+          },
+          "error": {
+            "type": "boolean"
+          },
+          "timestamp": {
+            "type": "string"
+          },
+          "path": {
+            "type": "string"
+          },
+          "responseMessage": {
+            "type": "string"
+          },
+          "data": {
+            "$ref": "#/components/schemas/OnboardingGuideResponseData"
+          }
+        }
+      },
+      "OnboardingGuideResponseData": {
+        "type": "object",
+        "properties": {
+          "totalSteps": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "completedSteps": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "nextStep": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "steps": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OnboardingGuideStep"
+            }
+          }
+        }
+      },
+      "OnboardingGuideStep": {
+        "type": "object",
+        "properties": {
+          "step": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "key": {
+            "type": "string"
+          },
+          "dataset": {
+            "type": "string",
+            "enum": [
+              "DEPARTMENTS",
+              "LECTURERS",
+              "ROOMS",
+              "PROGRAMS",
+              "COURSES",
+              "CURRICULUM",
+              "STUDENTS",
+              "SECTIONS",
+              "ENROLLMENTS"
+            ]
+          },
+          "title": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "method": {
+            "type": "string"
+          },
+          "endpoint": {
+            "type": "string"
+          },
+          "arrayEndpoint": {
+            "type": "string"
+          },
+          "requiredColumns": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "optionalColumns": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "dependsOn": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "count": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "completed": {
+            "type": "boolean"
+          },
+          "ready": {
+            "type": "boolean"
+          }
+        }
+      },
       "ReadLecturerRequest": {
         "type": "object",
         "properties": {
@@ -4931,6 +7210,9 @@
           "departmentName": {
             "type": "string"
           },
+          "departmentCode": {
+            "type": "string"
+          },
           "departmentStatus": {
             "type": "string",
             "enum": [
@@ -4971,6 +7253,53 @@
             "items": {
               "$ref": "#/components/schemas/DepartmentResponse"
             }
+          }
+        }
+      },
+      "DashboardStatsResponse": {
+        "type": "object",
+        "properties": {
+          "responseCode": {
+            "type": "string"
+          },
+          "error": {
+            "type": "boolean"
+          },
+          "timestamp": {
+            "type": "string"
+          },
+          "path": {
+            "type": "string"
+          },
+          "responseMessage": {
+            "type": "string"
+          },
+          "data": {
+            "$ref": "#/components/schemas/DashboardStatsResponseData"
+          }
+        }
+      },
+      "DashboardStatsResponseData": {
+        "type": "object",
+        "properties": {
+          "currentAcademicPeriod": {
+            "$ref": "#/components/schemas/AcademicPeriodResponse"
+          },
+          "courses": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "lecturers": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "rooms": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "students": {
+            "type": "integer",
+            "format": "int64"
           }
         }
       },
@@ -5040,6 +7369,93 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/CourseResponse"
+            }
+          }
+        }
+      },
+      "ReadActivityRequest": {
+        "type": "object",
+        "properties": {
+          "limit": {
+            "type": "integer",
+            "format": "int32",
+            "maximum": 50,
+            "minimum": 1
+          }
+        }
+      },
+      "ActivityResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "activityType": {
+            "type": "string",
+            "enum": [
+              "ACADEMIC_PERIOD_CREATED",
+              "COURSE_CREATED",
+              "COURSES_UPLOADED",
+              "CURRICULUM_UPLOADED",
+              "DEPARTMENTS_UPLOADED",
+              "ENROLLMENTS_UPLOADED",
+              "LECTURER_CREATED",
+              "LECTURERS_UPLOADED",
+              "PROGRAM_CREATED",
+              "PROGRAMS_UPLOADED",
+              "ROOM_CREATED",
+              "ROOMS_UPLOADED",
+              "SECTIONS_UPLOADED",
+              "STUDENT_CREATED",
+              "STUDENTS_IMPORTED",
+              "TIMETABLE_UPLOADED",
+              "TIMETABLE_GENERATED",
+              "TIMETABLE_GENERATION_FAILED"
+            ]
+          },
+          "activityTitle": {
+            "type": "string"
+          },
+          "activityDescription": {
+            "type": "string"
+          },
+          "activityOccurredAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "ReadActivityResponse": {
+        "type": "object",
+        "properties": {
+          "responseCode": {
+            "type": "string"
+          },
+          "error": {
+            "type": "boolean"
+          },
+          "timestamp": {
+            "type": "string"
+          },
+          "path": {
+            "type": "string"
+          },
+          "responseMessage": {
+            "type": "string"
+          },
+          "data": {
+            "$ref": "#/components/schemas/ReadActivityResponseData"
+          }
+        }
+      },
+      "ReadActivityResponseData": {
+        "type": "object",
+        "properties": {
+          "activities": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ActivityResponse"
             }
           }
         }
@@ -5132,6 +7548,33 @@
           },
           "responseMessage": {
             "type": "string"
+          }
+        }
+      },
+      "ResetResponse": {
+        "type": "object",
+        "properties": {
+          "responseCode": {
+            "type": "string"
+          },
+          "error": {
+            "type": "boolean"
+          },
+          "timestamp": {
+            "type": "string"
+          },
+          "path": {
+            "type": "string"
+          },
+          "responseMessage": {
+            "type": "string"
+          },
+          "data": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "integer",
+              "format": "int32"
+            }
           }
         }
       },
@@ -5308,6 +7751,70 @@
         ]
       },
       "DeleteRoomResponse": {
+        "type": "object",
+        "properties": {
+          "responseCode": {
+            "type": "string"
+          },
+          "error": {
+            "type": "boolean"
+          },
+          "timestamp": {
+            "type": "string"
+          },
+          "path": {
+            "type": "string"
+          },
+          "responseMessage": {
+            "type": "string"
+          }
+        }
+      },
+      "DeleteProgramRequest": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "required": [
+          "id"
+        ]
+      },
+      "DeleteProgramResponse": {
+        "type": "object",
+        "properties": {
+          "responseCode": {
+            "type": "string"
+          },
+          "error": {
+            "type": "boolean"
+          },
+          "timestamp": {
+            "type": "string"
+          },
+          "path": {
+            "type": "string"
+          },
+          "responseMessage": {
+            "type": "string"
+          }
+        }
+      },
+      "DeleteProgramCourseRequest": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "required": [
+          "id"
+        ]
+      },
+      "DeleteProgramCourseResponse": {
         "type": "object",
         "properties": {
           "responseCode": {

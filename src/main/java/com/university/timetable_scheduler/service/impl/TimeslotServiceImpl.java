@@ -8,6 +8,7 @@ import com.university.timetable_scheduler.mapper.TimeslotMapper;
 import com.university.timetable_scheduler.repository.SchoolRepository;
 import com.university.timetable_scheduler.repository.TimeslotRepository;
 import com.university.timetable_scheduler.service.TimeslotService;
+import com.university.timetable_scheduler.status.TimeslotEnum;
 import com.university.timetable_scheduler.tenant.TenantContext;
 import jakarta.transaction.Transactional;
 import lombok.AllArgsConstructor;
@@ -49,6 +50,7 @@ public class TimeslotServiceImpl implements TimeslotService {
         entity.setTimeslotStartTime(request.getTimeslotStartTime());
         entity.setTimeslotEndTime(request.getTimeslotEndTime());
         entity.setTimeslotDuration(request.getTimeslotDuration());
+        entity.setTimeslotSource(TimeslotEnum.TimeslotSource.CUSTOM);
         Timeslot saved = timeslotRepository.save(entity);
         CreateTimeslotResponse response = new CreateTimeslotResponse();
         CreateTimeslotResponse.Data responseData = new CreateTimeslotResponse.Data();

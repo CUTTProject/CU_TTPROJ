@@ -1,9 +1,12 @@
 package com.university.timetable_scheduler.generation;
 
+import com.university.timetable_scheduler.dto.response.timetable.SplitDecisionDTO;
+
 import com.university.timetable_scheduler.status.JobEnum;
 import lombok.Getter;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
 
 /**
@@ -32,6 +35,7 @@ public class GenerationJob {
     private volatile Integer scheduledEvents;
     private volatile Boolean feasible;
     private volatile String stopReason;
+    private volatile List<SplitDecisionDTO> splitDecisions = List.of();
 
     /** Prose for a human, never an exception message. */
     private volatile String failureMessage;
@@ -75,4 +79,5 @@ public class GenerationJob {
     public void setScheduledEvents(Integer scheduledEvents) { this.scheduledEvents = scheduledEvents; }
     public void setFeasible(Boolean feasible) { this.feasible = feasible; }
     public void setStopReason(String stopReason) { this.stopReason = stopReason; }
+    public void setSplitDecisions(List<SplitDecisionDTO> splitDecisions) { this.splitDecisions = List.copyOf(splitDecisions); }
 }
