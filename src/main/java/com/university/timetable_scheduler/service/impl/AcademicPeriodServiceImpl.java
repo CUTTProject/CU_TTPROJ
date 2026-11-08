@@ -8,6 +8,7 @@ import com.university.timetable_scheduler.mapper.AcademicPeriodMapper;
 import com.university.timetable_scheduler.repository.AcademicPeriodRepository;
 import com.university.timetable_scheduler.repository.SchoolRepository;
 import com.university.timetable_scheduler.service.AcademicPeriodService;
+import com.university.timetable_scheduler.status.AcademicPeriodEnum;
 import com.university.timetable_scheduler.status.ActivityEnum;
 import com.university.timetable_scheduler.tenant.TenantContext;
 import jakarta.transaction.Transactional;
@@ -41,7 +42,13 @@ public class AcademicPeriodServiceImpl implements AcademicPeriodService {
         }
     }
 
+    /** Only one period per school is ACTIVE: making one active closes all the others. */
+    private void closeOthers(AcademicPeriod active) {
+        academicPeriodRepository.deactivateAllExcept(active.getSchool().getId(), active.getId());
+    }
+
     @Override
+    @Transactional
     public CreateAcademicPeriodResponse createAcademicPeriod(CreateAcademicPeriodRequest request) {
         requireEndAfterStart(request.getAcademicPeriodStartDate(), request.getAcademicPeriodEndDate());
         AcademicPeriod entity = new AcademicPeriod();
@@ -51,7 +58,8 @@ public class AcademicPeriodServiceImpl implements AcademicPeriodService {
         entity.setAcademicPeriodSemester(request.getAcademicPeriodSemester());
         entity.setAcademicPeriodStartDate(request.getAcademicPeriodStartDate());
         entity.setAcademicPeriodEndDate(request.getAcademicPeriodEndDate());
-        AcademicPeriod saved = academicPeriodRepository.save(entity);
+        AcademicPeriod saved = academicPeriodRepository.saveAndFlush(entity);
+        closeOthers(saved);
         activityService.record(ActivityEnum.ActivityType.ACADEMIC_PERIOD_CREATED, "New academic period created",
                 ActivityServiceImpl.label(saved.getAcademicPeriodName()) + " was created");
         CreateAcademicPeriodResponse response = new CreateAcademicPeriodResponse();
@@ -90,6 +98,10 @@ public class AcademicPeriodServiceImpl implements AcademicPeriodService {
         // ended or archived period is reopened.
         academicPeriodMapper.updateDtoToEntity(request, entity);
         requireEndAfterStart(entity.getAcademicPeriodStartDate(), entity.getAcademicPeriodEndDate());
+        if (request.getAcademicPeriodStatus() == AcademicPeriodEnum.AcademicPeriodStatus.ACTIVE) {
+            entity = academicPeriodRepository.saveAndFlush(entity);
+            closeOthers(entity);
+        }
         UpdateAcademicPeriodResponse response = new UpdateAcademicPeriodResponse();
         UpdateAcademicPeriodResponse.Data responseData = new UpdateAcademicPeriodResponse.Data();
         responseData.setAcademicPeriod(academicPeriodMapper.toResponse(entity, academicPeriodGuard.now()));

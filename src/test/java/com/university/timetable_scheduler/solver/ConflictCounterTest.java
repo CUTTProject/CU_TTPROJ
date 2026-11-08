@@ -159,5 +159,8 @@ class ConflictCounterTest {
         assertThat(breakdown.lecturerStudentClashes()).isEqualTo(1);
         assertThat(breakdown.unassignedEvents()).isZero();
         assertThat(breakdown.conflictingEventIds()).hasSize(4);
+        assertThat(breakdown.clashes()).hasSize(2);
+        assertThat(breakdown.clashes()).filteredOn(ConflictCounter.Clash::sameRoom).hasSize(1);
+        assertThat(breakdown.unassignedEventIds()).isEmpty();
     }
 }

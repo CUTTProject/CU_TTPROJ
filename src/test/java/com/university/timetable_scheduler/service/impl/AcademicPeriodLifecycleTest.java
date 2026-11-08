@@ -176,4 +176,30 @@ class AcademicPeriodLifecycleTest {
 
         assertThat(endedOnly).extracting(AcademicPeriodResponse::getAcademicPeriodName).containsExactly("Last");
     }
+
+    private AcademicPeriodStatus statusOf(UUID id) {
+        ReadAcademicPeriodRequest read = new ReadAcademicPeriodRequest();
+        read.setId(id);
+        return academicPeriodService.readAcademicPeriod(read).getData().getAcademicPeriods().get(0)
+                .getAcademicPeriodStatus();
+    }
+
+    @Test
+    @DisplayName("Creating a period closes every other; reactivating one closes the rest")
+    void onlyOneActive() {
+        UUID first = create("First", now.minusDays(10), now.plusDays(100)).getId();
+        UUID second = create("Second", now.minusDays(5), now.plusDays(100)).getId();
+
+        assertThat(statusOf(first)).isEqualTo(AcademicPeriodStatus.INACTIVE);
+        assertThat(statusOf(second)).isEqualTo(AcademicPeriodStatus.ACTIVE);
+        assertConflict(() -> sectionService.bulkUploadSections(csv(SECTION_CSV), first, true), "archived");
+
+        UpdateAcademicPeriodRequest restore = new UpdateAcademicPeriodRequest();
+        restore.setId(first);
+        restore.setAcademicPeriodStatus(AcademicPeriodStatus.ACTIVE);
+        academicPeriodService.updateAcademicPeriod(restore);
+
+        assertThat(statusOf(first)).isEqualTo(AcademicPeriodStatus.ACTIVE);
+        assertThat(statusOf(second)).isEqualTo(AcademicPeriodStatus.INACTIVE);
+    }
 }

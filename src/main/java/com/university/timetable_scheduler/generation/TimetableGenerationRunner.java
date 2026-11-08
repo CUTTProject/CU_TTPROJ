@@ -4,6 +4,7 @@ import com.university.timetable_scheduler.dto.response.timetable.TimetableRespon
 import com.university.timetable_scheduler.entity.AcademicPeriod;
 import com.university.timetable_scheduler.service.impl.AcademicPeriodGuard;
 import com.university.timetable_scheduler.service.impl.ActivityServiceImpl;
+import com.university.timetable_scheduler.service.impl.TimetableConflictServiceImpl;
 import com.university.timetable_scheduler.service.impl.TimetableServiceImpl;
 import com.university.timetable_scheduler.solver.CspModel;
 import com.university.timetable_scheduler.solver.SolverParameters;
@@ -57,6 +58,7 @@ public class TimetableGenerationRunner {
     private final ThreadPoolTaskExecutor solverExecutor;
     private final ActivityServiceImpl activityService;
     private final AcademicPeriodGuard academicPeriodGuard;
+    private final TimetableConflictServiceImpl conflictService;
 
     // Explicit because Lombok does not copy @Qualifier onto constructor parameters, and there
     // are two ThreadPoolTaskExecutor beans.'
@@ -68,7 +70,8 @@ public class TimetableGenerationRunner {
                                      Clock clock,
                                      @Qualifier(AsyncConfig.SOLVER_EXECUTOR) ThreadPoolTaskExecutor solverExecutor,
                                      ActivityServiceImpl activityService,
-                                     AcademicPeriodGuard academicPeriodGuard) {
+                                     AcademicPeriodGuard academicPeriodGuard,
+                                     TimetableConflictServiceImpl conflictService) {
         this.timetableService = timetableService;
         this.registry = registry;
         this.webhookService = webhookService;
@@ -78,6 +81,7 @@ public class TimetableGenerationRunner {
         this.solverExecutor = solverExecutor;
         this.activityService = activityService;
         this.academicPeriodGuard = academicPeriodGuard;
+        this.conflictService = conflictService;
     }
 
     /**
@@ -122,6 +126,9 @@ public class TimetableGenerationRunner {
         MDC.put("jobId", job.getJobId().toString());
         MDC.put("schoolId", job.getSchoolId().toString());
         job.markRunning(Instant.now(clock));
+        // Set once the run is recorded as SUCCEEDED, so a later failure (in building the webhook
+        // payloads, say) does not also record it as FAILED.
+        boolean recorded = false;
 
         try {
             // Events first: the default timeslot grid is sized from their durations.
@@ -134,6 +141,7 @@ public class TimetableGenerationRunner {
                 log.warn("Nothing to solve for academic period {}", job.getAcademicPeriodId());
                 job.markFailed(Instant.now(clock),
                         "No events, rooms or timeslots were found for this academic period.");
+                recordFailure(job, job.getFailureMessage());
                 recordActivity(ActivityEnum.ActivityType.TIMETABLE_GENERATION_FAILED, "Timetable generation failed",
                         "No events, rooms or timeslots were found for this academic period.");
                 webhookService.publish(target, WebhookEnum.WebhookEventType.GENERATION_FAILED,
@@ -148,7 +156,9 @@ public class TimetableGenerationRunner {
             TimetableServiceImpl.SolveOutcome outcome = timetableService.runSolver(model.get());
             SolverResult result = outcome.result();
 
-            timetableService.applyAssignment(job.getSchoolId(), job.getAcademicPeriodId(), outcome.assignment());
+            // Applies the assignment and records the run and its conflicts, in one transaction.
+            conflictService.recordSuccess(job, outcome);
+            recorded = true;
 
             TimetableResponse timetable =
                     timetableService.buildTimetableResponse(job.getSchoolId(), job.getAcademicPeriodId());
@@ -168,6 +178,7 @@ public class TimetableGenerationRunner {
         } catch (Exception e) {
             log.error("Generation job {} failed for school {}", job.getJobId(), job.getSchoolId(), e);
             job.markFailed(Instant.now(clock), "The generation failed unexpectedly.");
+            if (!recorded) recordFailure(job, job.getFailureMessage());
             recordActivity(ActivityEnum.ActivityType.TIMETABLE_GENERATION_FAILED, "Timetable generation failed",
                     "The generation failed unexpectedly.");
             // Generic on purpose: the exception is in the server log, and the receiver is outside
@@ -178,6 +189,15 @@ public class TimetableGenerationRunner {
         } finally {
             registry.release(job.getSchoolId(), job.getAcademicPeriodId());
             MDC.clear();
+        }
+    }
+
+    /** Runs inside the catch-all's handling, so it must not throw. */
+    private void recordFailure(GenerationJob job, String message) {
+        try {
+            conflictService.recordFailure(job, message);
+        } catch (Exception e) {
+            log.warn("Could not record the failed generation {}", job.getJobId(), e);
         }
     }
 

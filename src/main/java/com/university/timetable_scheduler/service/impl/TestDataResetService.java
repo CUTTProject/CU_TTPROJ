@@ -22,6 +22,7 @@ public class TestDataResetService {
 
     /** Children before parents, so no foreign key is left pointing at a deleted row. */
     private static final List<String> ENTITIES_IN_DELETE_ORDER = List.of(
+            "TimetableConflict", "TimetableGeneration",
             "Enrollment", "Event", "SectionLecturer", "SectionRoom", "SectionTimeslot", "Section",
             "ProgramCourse", "Student", "AcademicPeriod", "Timeslot", "Room", "Course", "Program",
             "Lecturer", "Department", "Activity");

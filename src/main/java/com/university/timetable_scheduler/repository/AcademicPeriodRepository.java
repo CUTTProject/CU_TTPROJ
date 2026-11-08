@@ -2,6 +2,7 @@ package com.university.timetable_scheduler.repository;
 
 import com.university.timetable_scheduler.entity.AcademicPeriod;
 import com.university.timetable_scheduler.status.AcademicPeriodEnum;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -30,4 +31,19 @@ public interface AcademicPeriodRepository extends TenantAwareRepository<Academic
             @Param("academicPeriodSemester") String academicPeriodSemester,
             @Param("academicPeriodStatus") AcademicPeriodEnum.AcademicPeriodStatus academicPeriodStatus
     );
+
+    /**
+     * Archives every live period of the school except {@code keepId}, so only one stays ACTIVE.
+     * @return the number of periods closed
+     */
+    @Modifying(flushAutomatically = true, clearAutomatically = true)
+    @Query("""
+        UPDATE AcademicPeriod a
+        SET a.academicPeriodStatus = com.university.timetable_scheduler.status.AcademicPeriodEnum.AcademicPeriodStatus.INACTIVE
+        WHERE a.school.id = :schoolId
+          AND a.id <> :keepId
+          AND (a.isDeleted IS NULL OR a.isDeleted = false)
+          AND a.academicPeriodStatus = com.university.timetable_scheduler.status.AcademicPeriodEnum.AcademicPeriodStatus.ACTIVE
+    """)
+    int deactivateAllExcept(@Param("schoolId") UUID schoolId, @Param("keepId") UUID keepId);
 }

@@ -48,7 +48,7 @@ public final class AcoTimetableSolver {
 
         if (model.eventCount() == 0) {
             return new SolverResult(Solution.empty(0), new SolutionCost(0, 0),
-                    new ConflictCounter.CostBreakdown(0, 0, 0, java.util.Set.of()),
+                    ConflictCounter.CostBreakdown.none(),
                     0, Duration.ZERO, SolverResult.StopReason.NOTHING_TO_SOLVE, List.of());
         }
 

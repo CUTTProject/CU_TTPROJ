@@ -49,6 +49,9 @@ public class TimetableServiceImpl implements TimetableService {
     // static, so @AllArgsConstructor leaves it out of the constructor
     private static final Logger log = LoggerFactory.getLogger(TimetableServiceImpl.class);
 
+    /** The reason given for an event left without a time when nothing more specific applies. */
+    static final String NO_CLASH_FREE_PLACE = "No free time and room could be found for it without a clash";
+
     private SectionRepository sectionRepository;
     private SectionLecturerRepository sectionLecturerRepository;
     private EventRepository eventRepository;
@@ -57,6 +60,8 @@ public class TimetableServiceImpl implements TimetableService {
     private SectionRoomRepository sectionRoomRepository;
     private AcademicPeriodRepository academicPeriodRepository;
     private SchoolRepository schoolRepository;
+    private TimetableGenerationRepository timetableGenerationRepository;
+    private TimetableConflictRepository timetableConflictRepository;
 
 
     private CspModelBuilder cspModelBuilder;
@@ -224,18 +229,31 @@ public class TimetableServiceImpl implements TimetableService {
      * the row — silently reverting any edit made during the solve. Hence ids across the boundary
      * and a fresh re-read here.
      *
+     * <p>Events this run left unplaced lose any time and room an earlier run gave them, so the
+     * timetable never shows an event at a place this run did not check. Only the ids the solver
+     * reported are cleared: an event added during the solve was never considered, and is left alone.
+     *
+     * @param unplacedEventIds events the solver considered but could not place
      * @return how many events were assigned a slot
      */
     @Transactional
     public int applyAssignment(UUID schoolId, UUID academicPeriodId,
-                               Map<UUID, TimetableService.AssignmentIds> assignment) {
-        if (assignment.isEmpty()) return 0;
+                               Map<UUID, TimetableService.AssignmentIds> assignment,
+                               Collection<UUID> unplacedEventIds) {
+        if (assignment.isEmpty() && unplacedEventIds.isEmpty()) return 0;
+        Set<UUID> unplaced = new HashSet<>(unplacedEventIds);
 
         List<Event> events = eventRepository.findAllBySchoolIdAndAcademicPeriodId(schoolId, academicPeriodId);
         int applied = 0;
         for (Event event : events) {
             TimetableService.AssignmentIds ids = assignment.get(event.getId());
-            if (ids == null) continue;
+            if (ids == null) {
+                if (unplaced.contains(event.getId())) {
+                    event.setEventTimeslot(null);
+                    event.setEventRoom(null);
+                }
+                continue;
+            }
             // getReferenceById: no SELECT per timeslot and room just to set an FK.
             event.setEventTimeslot(timeslotRepository.getReferenceById(ids.timeslotId()));
             event.setEventRoom(ids.roomId() != null ? roomRepository.getReferenceById(ids.roomId()) : null);
@@ -383,7 +401,7 @@ public class TimetableServiceImpl implements TimetableService {
     }
 
     /** Main section id → the related sections taught with it, for "A/B" labels. */
-    private Map<UUID, List<Section>> relatedByMain(UUID schoolId, UUID academicPeriodId) {
+    Map<UUID, List<Section>> relatedByMain(UUID schoolId, UUID academicPeriodId) {
         return sectionRepository.findSectionByFilter(schoolId, null, null, null, academicPeriodId, null).stream()
                 .filter(Section::isMerged)
                 .collect(Collectors.groupingBy(s -> s.getSectionMergedInto().getId()));
@@ -393,7 +411,7 @@ public class TimetableServiceImpl implements TimetableService {
      * Each related course's value, then the main course's, joined by "/" — the order the relatedTo
      * row reads: PHY 101 related to PHY 107 is "PHY 101/PHY 107".
      */
-    private static String courseLabel(Section main, List<Section> related, Function<Course, String> part) {
+    static String courseLabel(Section main, List<Section> related, Function<Course, String> part) {
         return Stream.concat(related.stream(), Stream.of(main))
                 .map(Section::getSectionCourse)
                 .filter(Objects::nonNull)
@@ -403,7 +421,7 @@ public class TimetableServiceImpl implements TimetableService {
     }
 
     /** The section names in the same order as {@link #courseLabel}: "PHY 101-CSC/PHY 107-CSC". */
-    private static String sectionLabel(Section main, List<Section> related) {
+    static String sectionLabel(Section main, List<Section> related) {
         return Stream.concat(related.stream(), Stream.of(main))
                 .map(Section::getSectionName)
                 .filter(Objects::nonNull)
@@ -416,7 +434,13 @@ public class TimetableServiceImpl implements TimetableService {
      */
     private List<UnassignedEventDTO> unassignedEvents(UUID schoolId, List<Event> events,
                                                       Map<UUID, List<Section>> relatedByMain) {
-        List<Event> unassigned = events.stream().filter(e -> e.getEventTimeslot() == null).toList();
+        return describeUnplaced(schoolId, events.stream().filter(e -> e.getEventTimeslot() == null).toList(),
+                relatedByMain);
+    }
+
+    /** Why each event in {@code unassigned} has no place: {@link #NO_CLASH_FREE_PLACE}, or a room too small. */
+    List<UnassignedEventDTO> describeUnplaced(UUID schoolId, List<Event> unassigned,
+                                              Map<UUID, List<Section>> relatedByMain) {
         if (unassigned.isEmpty()) return List.of();
 
         List<Room> rooms = roomRepository.findAllBySchool_Id(schoolId);
@@ -436,7 +460,7 @@ public class TimetableServiceImpl implements TimetableService {
             String label = section == null ? null
                     : section.getSectionCourse() == null ? section.getSectionName()
                     : courseLabel(section, related, Course::getCourseCode);
-            String reason = "No free time and room could be found for it without a clash";
+            String reason = NO_CLASH_FREE_PLACE;
             if (!related.isEmpty()) {
                 int seats = CspModelBuilder.pairedSeats(section, related);
                 List<Room> allowed = roomsBySection.getOrDefault(section.getId(), rooms);
@@ -644,6 +668,8 @@ public class TimetableServiceImpl implements TimetableService {
                 doc.add(table);
             }
 
+            addConflictsSection(doc, schoolId, academicPeriod.getId());
+
             List<UnassignedEventDTO> unassigned = unassignedEvents(schoolId, allEvents, relatedByMain);
             if (!unassigned.isEmpty()) {
                 doc.add(new Paragraph("UNASSIGNED")
@@ -664,6 +690,59 @@ public class TimetableServiceImpl implements TimetableService {
         } catch (Exception e) {
             throw new RuntimeException("Failed to generate timetable PDF: " + e.getMessage(), e);
         }
+    }
+
+    /**
+     * The clashes recorded for the latest generation. Events with no time are left to the
+     * UNASSIGNED section, which reads them from the events as they are now.
+     */
+    private void addConflictsSection(Document doc, UUID schoolId, UUID academicPeriodId) throws java.io.IOException {
+        Optional<TimetableGeneration> latest = timetableGenerationRepository
+                .findFirstBySchool_IdAndAcademicPeriod_IdAndGenerationStatusAndIsDeletedFalseOrderByFinishedAtDesc(
+                        schoolId, academicPeriodId, JobEnum.JobStatus.SUCCEEDED);
+        if (latest.isEmpty()) return;
+
+        List<String> dayOrder = List.of("MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SATURDAY", "SUNDAY");
+        List<TimetableConflict> clashes = timetableConflictRepository
+                .findAllBySchool_IdAndGeneration_IdAndIsDeletedFalse(schoolId, latest.get().getId()).stream()
+                .filter(c -> c.getEventBId() != null)
+                .sorted(Comparator
+                        .comparing(TimetableConflict::getConflictType)
+                        .thenComparingInt(c -> c.getConflictDay() != null ? dayOrder.indexOf(c.getConflictDay()) : 99)
+                        .thenComparing(c -> c.getEventAStartTime() != null ? c.getEventAStartTime() : ""))
+                .toList();
+        if (clashes.isEmpty()) return;
+
+        doc.add(new Paragraph("CONFLICTS")
+                .setFont(PdfFontFactory.createFont(StandardFonts.HELVETICA_BOLD))
+                .setFontSize(13)
+                .setMarginTop(14)
+                .setMarginBottom(4));
+
+        Table table = new Table(UnitValue.createPercentArray(new float[]{10, 9, 22, 22, 37}))
+                .useAllAvailableWidth();
+        for (String h : new String[]{"Type", "Day", "Event A", "Event B", "Reason"}) {
+            table.addHeaderCell(new Cell()
+                    .add(new Paragraph(h)
+                            .setFont(PdfFontFactory.createFont(StandardFonts.HELVETICA_BOLD))
+                            .setFontSize(9))
+                    .setBackgroundColor(ColorConstants.LIGHT_GRAY));
+        }
+        for (TimetableConflict c : clashes) {
+            table.addCell(cell(c.getConflictType().name().replace('_', ' ')));
+            table.addCell(cell(nullSafe(c.getConflictDay())));
+            table.addCell(cell(conflictEventLabel(c.getEventACourseCode(), c.getEventASectionName(),
+                    c.getEventAStartTime(), c.getEventAEndTime(), c.getEventARoom())));
+            table.addCell(cell(conflictEventLabel(c.getEventBCourseCode(), c.getEventBSectionName(),
+                    c.getEventBStartTime(), c.getEventBEndTime(), c.getEventBRoom())));
+            table.addCell(cell(nullSafe(c.getConflictReason())));
+        }
+        doc.add(table);
+    }
+
+    private static String conflictEventLabel(String code, String section, String start, String end, String room) {
+        return nullSafe(code) + " (" + nullSafe(section) + ")\n" + nullSafe(start) + " – " + nullSafe(end)
+                + ", " + nullSafe(room);
     }
 
     private static Cell cell(String text) {

@@ -1,6 +1,8 @@
 package com.university.timetable_scheduler.solver;
 
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
@@ -260,6 +262,8 @@ public final class ConflictCounter {
         int lecturerStudentClashes = 0;
         int unassigned = 0;
         Set<UUID> conflictingEventIds = new HashSet<>();
+        Set<UUID> unassignedEventIds = new HashSet<>();
+        List<Clash> clashes = new ArrayList<>();
         Set<Long> countedPairs = new HashSet<>();
 
         for (int e = 0; e < model.eventCount(); e++) {
@@ -267,6 +271,7 @@ public final class ConflictCounter {
                 if (!model.domainOf(e).isEmpty()) {
                     unassigned++;
                     conflictingEventIds.add(model.event(e).getId());
+                    unassignedEventIds.add(model.event(e).getId());
                 }
                 continue;
             }
@@ -280,14 +285,17 @@ public final class ConflictCounter {
                 if (!countedPairs.add(pairKey)) continue;
 
                 Candidate otherCand = model.candidate(other, solution.choiceOf(other));
-                if (otherCand.roomIndex() == cand.roomIndex()) roomClashes++;
+                boolean sameRoom = otherCand.roomIndex() == cand.roomIndex();
+                if (sameRoom) roomClashes++;
                 else lecturerStudentClashes++;
+                clashes.add(new Clash(model.event(e).getId(), model.event(other).getId(), sameRoom));
 
                 conflictingEventIds.add(model.event(e).getId());
                 conflictingEventIds.add(model.event(other).getId());
             }
         }
-        return new CostBreakdown(unassigned, roomClashes, lecturerStudentClashes, conflictingEventIds);
+        return new CostBreakdown(unassigned, roomClashes, lecturerStudentClashes, conflictingEventIds,
+                unassignedEventIds, clashes);
     }
 
     /** Order-independent key for an unordered pair, so (a,b) and (b,a) collapse to one entry. */
@@ -297,9 +305,30 @@ public final class ConflictCounter {
         return ((long) lo << 32) | (hi & 0xFFFFFFFFL);
     }
 
-    /** Violation counts split by reason, for logs and the API response. */
+    /**
+     * Violation counts split by reason, for logs and the API response, and the violations themselves
+     * so they can be recorded.
+     *
+     * @param unassignedEventIds events that could have been placed but were not; excludes those
+     *                           with an empty domain, which {@link SolverResult} reports separately
+     * @param clashes            each clashing pair once
+     */
     public record CostBreakdown(int unassignedEvents,
                                 int roomClashes,
                                 int lecturerStudentClashes,
-                                Set<UUID> conflictingEventIds) {}
+                                Set<UUID> conflictingEventIds,
+                                Set<UUID> unassignedEventIds,
+                                List<Clash> clashes) {
+
+        public static CostBreakdown none() {
+            return new CostBreakdown(0, 0, 0, Set.of(), Set.of(), List.of());
+        }
+    }
+
+    /**
+     * Two placed events that break a hard constraint together. {@code sameRoom} means a room clash;
+     * otherwise they share a lecturer or students and overlap in time — which of the two is worked
+     * out from the conflict graph when the clash is recorded, since the solver never needs it.
+     */
+    public record Clash(UUID eventA, UUID eventB, boolean sameRoom) {}
 }
