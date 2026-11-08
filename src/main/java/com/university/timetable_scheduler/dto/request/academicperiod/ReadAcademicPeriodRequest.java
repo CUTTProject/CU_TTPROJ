@@ -18,5 +18,7 @@ public class ReadAcademicPeriodRequest {
     private String academicPeriodSession;
     private String academicPeriodSemester;
     private AcademicPeriodEnum.AcademicPeriodStatus academicPeriodStatus;
+    /** Filters on the phase worked out from the dates: UPCOMING, IN_PROGRESS, ENDED or ARCHIVED. */
+    private AcademicPeriodEnum.AcademicPeriodPhase academicPeriodPhase;
 }
 

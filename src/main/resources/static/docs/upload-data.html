@@ -1,0 +1,211 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Uploading your data · Timetable Scheduler Docs</title>
+  <link rel="stylesheet" href="docs.css">
+</head>
+<body>
+<div class="layout">
+  <aside class="sidebar">
+    <div class="sidebar-head">
+      <a class="brand" href="index.html">Timetable Scheduler<span>Documentation</span></a>
+      <button class="menu-toggle" type="button" aria-expanded="false">Menu</button>
+    </div>
+    <nav>
+      <div class="nav-label">Start here</div>
+      <a href="index.html">Overview</a>
+      <a href="getting-started.html">Getting started</a>
+      <div class="nav-label">Guides</div>
+      <a href="upload-data.html">Uploading your data</a>
+      <a href="generate.html">Generating a timetable</a>
+      <a href="webhooks.html">Webhooks</a>
+      <div class="nav-label">Reference</div>
+      <a href="csv-reference.html">Data fields</a>
+      <a href="troubleshooting.html">Troubleshooting</a>
+      <a href="how-it-works.html">How the scheduler works</a>
+      <a href="/swagger-ui/index.html">API reference ↗</a>
+    </nav>
+  </aside>
+
+  <main>
+    <h1>Uploading your data</h1>
+    <p class="lead">Send your school's data as CSV files or as JSON, one type at a time, in a set order.</p>
+
+    <h2>CSV or JSON?</h2>
+    <p>Both do exactly the same thing: same checks, same report, same results. Choose whichever suits you:</p>
+    <ul>
+      <li><strong>CSV</strong>: export a sheet from Excel or Google Sheets and upload the file. Best for setting
+        up by hand.</li>
+      <li><strong>JSON</strong>: send the rows in the request body. Best when your student records or HR system
+        sends the data automatically.</li>
+    </ul>
+    <p>The field names are identical: a CSV column called <code>departmentCode</code> is a JSON key called
+      <code>departmentCode</code>. You can also mix formats, for example CSV for rooms and JSON for students.</p>
+
+    <h2>The order</h2>
+    <p>Each file refers to things uploaded before it. For example, a lecturer row names a department, so
+      departments have to exist first. Upload in this order:</p>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>#</th><th>Data</th><th>Endpoint</th><th>Needs</th></tr></thead>
+        <tbody>
+          <tr><td>1</td><td>Departments</td><td><code>/api/departments</code></td><td>—</td></tr>
+          <tr><td>2</td><td>Lecturers</td><td><code>/api/lecturers</code></td><td>Departments</td></tr>
+          <tr><td>3</td><td>Rooms</td><td><code>/api/rooms</code></td><td>—</td></tr>
+          <tr><td>4</td><td>Programmes</td><td><code>/api/programs</code></td><td>Departments</td></tr>
+          <tr><td>5</td><td>Courses</td><td><code>/api/courses</code></td><td>Departments</td></tr>
+          <tr><td>6</td><td>Curriculum</td><td><code>/api/program-courses</code></td><td>Programmes, courses</td></tr>
+          <tr><td>7</td><td>Students</td><td><code>/api/students</code></td><td>Programmes</td></tr>
+          <tr><td>8</td><td><em>Academic period</em></td><td><a href="generate.html#period">Create one</a></td><td>—</td></tr>
+          <tr><td>9</td><td>Sections</td><td><code>/api/sections</code></td><td>Courses, lecturers, rooms, period</td></tr>
+          <tr><td>10</td><td>Enrollments</td><td><code>/api/enrollments</code></td><td>Students, sections</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>Add <code>/bulk-upload</code> to the endpoint for a CSV file, or <code>/bulk-upload/array</code> for JSON.
+      For example, <code>/api/departments/bulk-upload</code> or <code>/api/departments/bulk-upload/array</code>.</p>
+    <p>Steps 1–7 describe your school and rarely change. Steps 9–10 are uploaded <strong>for each academic
+      period</strong>, since the classes on offer change every semester.</p>
+    <p>Programmes and curriculum are optional if your school doesn't use them. In that case, give each student a
+      <code>departmentCode</code> instead of a <code>programCode</code>.</p>
+
+    <h2>Sending data</h2>
+    <div class="tabs">
+      <div class="tab-list" role="tablist">
+        <button data-tab="csv">CSV file</button>
+        <button data-tab="json">JSON</button>
+      </div>
+      <div class="tab-panel" data-panel="csv">
+        <p>Send the file as a form upload named <code>file</code>. The first row must be the column names.</p>
+        <pre><code>curl -X POST $BASE/api/departments/bulk-upload \
+  -H "Authorization: Bearer $TOKEN" \
+  -F "file=@departments.csv"</code></pre>
+        <p>where <code>departments.csv</code> contains:</p>
+        <pre><code>departmentCode,departmentName
+CSC,Computer Science
+SEN,Software Engineering</code></pre>
+      </div>
+      <div class="tab-panel" data-panel="json" hidden>
+        <p>Send a <code>rows</code> array. Each row is an object whose keys are the column names.</p>
+        <pre><code>curl -X POST $BASE/api/departments/bulk-upload/array \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "rows": [
+      { "departmentCode": "CSC", "departmentName": "Computer Science" },
+      { "departmentCode": "SEN", "departmentName": "Software Engineering" }
+    ]
+  }'</code></pre>
+        <p>Leave out keys you don't need. Numbers such as <code>roomCapacity</code> can be sent as JSON numbers.</p>
+      </div>
+    </div>
+
+    <h3>Sections and enrollments</h3>
+    <p>These two belong to an academic period, so they also need its id:</p>
+    <div class="tabs">
+      <div class="tab-list" role="tablist">
+        <button data-tab="csv">CSV file</button>
+        <button data-tab="json">JSON</button>
+      </div>
+      <div class="tab-panel" data-panel="csv">
+        <p>Pass the period in the address:</p>
+        <pre><code>curl -X POST "$BASE/api/sections/bulk-upload?academicPeriodId=$PERIOD" \
+  -H "Authorization: Bearer $TOKEN" \
+  -F "file=@sections.csv"</code></pre>
+      </div>
+      <div class="tab-panel" data-panel="json" hidden>
+        <p>Pass the period in the body, next to <code>rows</code>:</p>
+        <pre><code>curl -X POST $BASE/api/sections/bulk-upload/array \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "academicPeriodId": "3f2b...",
+    "rows": [
+      { "courseCode": "CSC 101", "sectionName": "CSC 101-CSC",
+        "lecturerStaffNumbers": "L001", "sectionDurationMinutes": 180,
+        "eventType": "LAB", "split": "yes" }
+    ]
+  }'</code></pre>
+      </div>
+    </div>
+
+    <h3>Check before you save</h3>
+    <p>Add <code>?dryRun=true</code> to the address to check your data without saving anything. You get the same
+      report a real upload would give. This works for both CSV and JSON.</p>
+    <div class="tabs">
+      <div class="tab-list" role="tablist">
+        <button data-tab="csv">CSV file</button>
+        <button data-tab="json">JSON</button>
+      </div>
+      <div class="tab-panel" data-panel="csv">
+        <pre><code>curl -X POST "$BASE/api/lecturers/bulk-upload?dryRun=true" \
+  -H "Authorization: Bearer $TOKEN" \
+  -F "file=@lecturers.csv"</code></pre>
+      </div>
+      <div class="tab-panel" data-panel="json" hidden>
+        <pre><code>curl -X POST "$BASE/api/lecturers/bulk-upload/array?dryRun=true" \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{ "rows": [ { "lecturerStaffNumber": "L001", "departmentCode": "CSC" } ] }'</code></pre>
+      </div>
+    </div>
+
+    <h2>Reading the result</h2>
+    <p>Every upload, CSV or JSON, returns a report like this:</p>
+    <pre><code>{
+  "data": {
+    "dataset": "LECTURERS",
+    "dryRun": false,
+    "submitted": 55,
+    "created": 53,
+    "updated": 0,
+    "unchanged": 0,
+    "skipped": 2,
+    "errors": [
+      { "row": 14, "column": "departmentCode", "value": "CSCC",
+        "message": "No department has this code" }
+    ],
+    "warnings": []
+  }
+}</code></pre>
+    <ul>
+      <li><strong>Good rows are saved even if others fail.</strong> Fix the rows listed in <code>errors</code>
+        and upload the file again.</li>
+      <li><code>row</code> tells you which row has the problem:
+        <ul>
+          <li><strong>CSV</strong>: the spreadsheet row number. The header is row 1, so the first data row is row 2.</li>
+          <li><strong>JSON</strong>: the position in <code>rows</code>, counting from 1.</li>
+        </ul>
+      </li>
+      <li><code>warnings</code> are rows that were saved but had a value ignored, such as a department head who
+        doesn't exist yet.</li>
+    </ul>
+
+    <h2>Uploading again is safe</h2>
+    <p>Each row is matched to what's already there by its code, such as <code>departmentCode</code>,
+      <code>lecturerStaffNumber</code> or <code>studentMatriculationNumber</code>. Matching rows are
+      <strong>updated</strong>, not duplicated. To correct your data, fix it at the source and send it again. That also
+      makes it safe for an automated JSON sync to send the full list every night.</p>
+    <div class="note">
+      <p><strong>Department heads:</strong> leave <code>departmentHeadStaffNumber</code> blank on your first
+        departments upload, because lecturers don't exist yet. Fill it in and upload departments again after
+        uploading lecturers.</p>
+    </div>
+    <div class="warn">
+      <p>Uploading a section again <strong>replaces</strong> its lecturers, rooms and time restrictions with
+        what's in the new file.</p>
+    </div>
+
+    <p>For every field each upload accepts, see <a href="csv-reference.html">Data fields</a>.</p>
+
+    <div class="pager">
+      <a href="getting-started.html">← Getting started</a>
+      <a href="generate.html">Next: Generating a timetable →</a>
+    </div>
+  </main>
+</div>
+<script src="docs.js"></script>
+</body>
+</html>

@@ -1,0 +1,222 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Data fields · Timetable Scheduler Docs</title>
+  <link rel="stylesheet" href="docs.css">
+</head>
+<body>
+<div class="layout">
+  <aside class="sidebar">
+    <div class="sidebar-head">
+      <a class="brand" href="index.html">Timetable Scheduler<span>Documentation</span></a>
+      <button class="menu-toggle" type="button" aria-expanded="false">Menu</button>
+    </div>
+    <nav>
+      <div class="nav-label">Start here</div>
+      <a href="index.html">Overview</a>
+      <a href="getting-started.html">Getting started</a>
+      <div class="nav-label">Guides</div>
+      <a href="upload-data.html">Uploading your data</a>
+      <a href="generate.html">Generating a timetable</a>
+      <a href="webhooks.html">Webhooks</a>
+      <div class="nav-label">Reference</div>
+      <a href="csv-reference.html">Data fields</a>
+      <a href="troubleshooting.html">Troubleshooting</a>
+      <a href="how-it-works.html">How the scheduler works</a>
+      <a href="/swagger-ui/index.html">API reference ↗</a>
+    </nav>
+  </aside>
+
+  <main>
+    <h1>Data fields</h1>
+    <p class="lead">Every field each upload accepts, for CSV and JSON alike. <strong>Bold</strong> fields are required.</p>
+
+    <p>Each name below is both a CSV column and a JSON key. Spell it exactly as shown, including capital letters.
+      Fields you don't need can be left out.</p>
+
+    <div class="tabs">
+      <div class="tab-list" role="tablist">
+        <button data-tab="csv">CSV file</button>
+        <button data-tab="json">JSON</button>
+      </div>
+      <div class="tab-panel" data-panel="csv">
+        <p>The first row is the field names, and each following row is one record. Column order doesn't matter.</p>
+        <pre><code>roomNumber,roomBuilding,roomCapacity,roomType
+LT1,Engineering Block,200,LECTURE_THEATRE
+Lab-2,Science Block,40,LAB</code></pre>
+      </div>
+      <div class="tab-panel" data-panel="json" hidden>
+        <p>Each record is an object in <code>rows</code>. Key order doesn't matter. Numbers can be JSON numbers,
+          and everything else is a string, including <code>yes</code>/<code>no</code> values.</p>
+        <pre><code>{
+  "rows": [
+    { "roomNumber": "LT1", "roomBuilding": "Engineering Block",
+      "roomCapacity": 200, "roomType": "LECTURE_THEATRE" },
+    { "roomNumber": "Lab-2", "roomBuilding": "Science Block",
+      "roomCapacity": 40, "roomType": "LAB" }
+  ]
+}</code></pre>
+        <p>For sections and enrollments, also send <code>"academicPeriodId"</code> next to <code>rows</code>.</p>
+      </div>
+    </div>
+
+    <h2 id="samples">Sample files</h2>
+    <p>A complete example school, as CSV. Upload the files as-is, or use them as templates for either format:</p>
+    <ul>
+      <li><a href="samples/01-Department.csv" download>01-Department.csv</a></li>
+      <li><a href="samples/02-Lecturer.csv" download>02-Lecturer.csv</a></li>
+      <li><a href="samples/03-Room.csv" download>03-Room.csv</a></li>
+      <li><a href="samples/04-Course.csv" download>04-Course.csv</a></li>
+      <li><a href="samples/05-Student.csv" download>05-Student.csv</a></li>
+      <li><a href="samples/06-Section.csv" download>06-Section.csv</a> (upload into an academic period)</li>
+      <li><a href="samples/07-Enrollment.csv" download>07-Enrollment.csv</a> (upload into an academic period)</li>
+    </ul>
+
+    <h2 id="departments">Departments</h2>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Field</th><th>Notes</th></tr></thead>
+      <tbody>
+        <tr><td><strong><code>departmentCode</code></strong></td><td>Short code, up to 20 characters, e.g. <code>CSC</code>. Used to match rows on re-upload.</td></tr>
+        <tr><td><strong><code>departmentName</code></strong></td><td>e.g. <code>Computer Science</code></td></tr>
+        <tr><td><code>departmentHeadStaffNumber</code></td><td>A lecturer's staff number. Leave blank until lecturers are uploaded.</td></tr>
+      </tbody>
+    </table></div>
+
+    <h2 id="lecturers">Lecturers</h2>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Field</th><th>Notes</th></tr></thead>
+      <tbody>
+        <tr><td><strong><code>lecturerStaffNumber</code></strong></td><td>Unique per lecturer, e.g. <code>L001</code>.</td></tr>
+        <tr><td><strong><code>departmentCode</code></strong></td><td>Must match an uploaded department.</td></tr>
+        <tr><td><code>lecturerFirstName</code>, <code>lecturerLastName</code></td><td>Optional. Without a name, the staff number is shown on the timetable.</td></tr>
+        <tr><td><code>lecturerEmail</code></td><td>Optional.</td></tr>
+      </tbody>
+    </table></div>
+    <p>For names and emails, an <em>empty cell</em> clears the stored value, while a <em>missing column</em> leaves it
+      unchanged. The same applies to students.</p>
+
+    <h2 id="rooms">Rooms</h2>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Field</th><th>Notes</th></tr></thead>
+      <tbody>
+        <tr><td><strong><code>roomNumber</code></strong></td><td>e.g. <code>LT1</code>. A room is identified by number and building together.</td></tr>
+        <tr><td><code>roomBuilding</code></td><td>e.g. <code>Engineering Block</code></td></tr>
+        <tr><td><code>roomCapacity</code></td><td>Number of seats. A class is only placed in a room big enough for it.</td></tr>
+        <tr><td><code>roomType</code></td><td><code>CLASS</code>, <code>LAB</code>, <code>SEMINAR_ROOM</code> or <code>LECTURE_THEATRE</code></td></tr>
+      </tbody>
+    </table></div>
+
+    <h2 id="programmes">Programmes</h2>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Field</th><th>Notes</th></tr></thead>
+      <tbody>
+        <tr><td><strong><code>programCode</code></strong></td><td>Up to 20 characters, e.g. <code>BSC-CSC</code>.</td></tr>
+        <tr><td><strong><code>programName</code></strong></td><td>e.g. <code>B.Sc. Computer Science</code></td></tr>
+        <tr><td><strong><code>departmentCode</code></strong></td><td>The department that runs it.</td></tr>
+        <tr><td><code>programCoordinatorStaffNumber</code></td><td>Optional. Must be an uploaded lecturer.</td></tr>
+        <tr><td><code>programLevel</code></td><td><code>UNDERGRADUATE</code> or <code>POSTGRADUATE</code></td></tr>
+        <tr><td><code>programDuration</code></td><td>Years, e.g. <code>4</code></td></tr>
+        <tr><td><code>programStatus</code></td><td><code>ACTIVE</code> or <code>INACTIVE</code></td></tr>
+        <tr><td><code>programDescription</code></td><td>Free text.</td></tr>
+      </tbody>
+    </table></div>
+
+    <h2 id="courses">Courses</h2>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Field</th><th>Notes</th></tr></thead>
+      <tbody>
+        <tr><td><strong><code>courseCode</code></strong></td><td>Up to 20 characters, e.g. <code>CSC 101</code>. Each course appears once, even if several programmes take it.</td></tr>
+        <tr><td><strong><code>courseName</code></strong></td><td>e.g. <code>Introduction to Computer Science</code></td></tr>
+        <tr><td><strong><code>departmentCode</code></strong></td><td>The department that owns it.</td></tr>
+        <tr><td><code>courseUnit</code></td><td>1–10. Decides how a section can be split (see Sections).</td></tr>
+        <tr><td><code>courseLevel</code></td><td><code>100</code>–<code>500</code> (or <code>LEVEL_100</code>…)</td></tr>
+        <tr><td><code>courseDescription</code></td><td>Free text.</td></tr>
+      </tbody>
+    </table></div>
+
+    <h2 id="curriculum">Curriculum</h2>
+    <p>Which courses each programme takes. Optional.</p>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Field</th><th>Notes</th></tr></thead>
+      <tbody>
+        <tr><td><strong><code>programCode</code></strong></td><td>An uploaded programme.</td></tr>
+        <tr><td><strong><code>courseCode</code></strong></td><td>An uploaded course.</td></tr>
+        <tr><td><strong><code>level</code></strong></td><td><code>100</code>–<code>500</code></td></tr>
+        <tr><td><code>semester</code></td><td><code>FIRST</code> or <code>SECOND</code></td></tr>
+        <tr><td><code>isCore</code></td><td><code>yes</code>/<code>no</code>. Blank means core.</td></tr>
+      </tbody>
+    </table></div>
+
+    <h2 id="students">Students</h2>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Field</th><th>Notes</th></tr></thead>
+      <tbody>
+        <tr><td><strong><code>studentMatriculationNumber</code></strong></td><td>Unique per student.</td></tr>
+        <tr><td><strong><code>studentLevel</code></strong></td><td><code>100</code>–<code>500</code></td></tr>
+        <tr><td><code>programCode</code></td><td>The student's programme.</td></tr>
+        <tr><td><code>departmentCode</code></td><td>Use instead of <code>programCode</code> if your school has no programmes.</td></tr>
+        <tr><td><code>studentFirstName</code>, <code>studentLastName</code>, <code>studentEmail</code></td><td>Optional.</td></tr>
+      </tbody>
+    </table></div>
+
+    <h2 id="sections">Sections</h2>
+    <p>Uploaded into an academic period. One row per class group.</p>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Field</th><th>Notes</th></tr></thead>
+      <tbody>
+        <tr><td><strong><code>courseCode</code></strong></td><td>An uploaded course.</td></tr>
+        <tr><td><strong><code>sectionName</code></strong></td><td>e.g. <code>CSC 101-CSC</code>. Used by enrollments.</td></tr>
+        <tr><td><strong><code>lecturerStaffNumbers</code></strong></td><td>One or more, separated by <code>/</code>, e.g. <code>L001/L002</code>.</td></tr>
+        <tr><td><strong><code>sectionDurationMinutes</code></strong></td><td>Total teaching time per week, a multiple of 5, e.g. <code>180</code>.</td></tr>
+        <tr><td><strong><code>eventType</code></strong></td><td><code>CLASS</code> or <code>LAB</code>. A label only.</td></tr>
+        <tr><td><code>sectionEnrollmentSize</code></td><td>Expected number of students. Used to pick a big enough room.</td></tr>
+        <tr><td><code>sectionUnits</code></td><td>Overrides the course's units for this section.</td></tr>
+        <tr><td><code>split</code></td><td><code>yes</code>, <code>no</code> (default) or <code>maybe</code>. See below.</td></tr>
+        <tr><td><code>relatedTo</code></td><td>Another section's name, to teach the two together. See below.</td></tr>
+        <tr><td><code>rooms</code></td><td>Only use these rooms, e.g. <code>LT1/LT2</code>. Blank means any suitable room.</td></tr>
+        <tr><td><code>timeslot</code></td><td>Only use these times, e.g. <code>M(13:00-15:00)/TH(14:00-17:00)</code>.</td></tr>
+      </tbody>
+    </table></div>
+
+    <h3>Splitting a section into meetings</h3>
+    <ul>
+      <li><code>split=no</code>: the section meets once a week for its full duration.</li>
+      <li><code>split=yes</code>: a 3-unit section meets twice, for ⅔ and ⅓ of its time. A 4-unit section meets
+        twice, for half its time each. Other unit counts can't be split.</li>
+      <li><code>split=maybe</code>: the scheduler decides each time it generates, whichever fits better.</li>
+    </ul>
+
+    <h3>Teaching two sections together</h3>
+    <p>If two groups share one class, for example Physics students and Computer Science students taking
+      <code>PHY 107</code> together, set <code>relatedTo</code> on <code>PHY 107-CSC</code> to
+      <code>PHY 107-PHY</code>. They're placed at the same time in a room that seats both, and shown as
+      <code>PHY 107-CSC/PHY 107-PHY</code>. This works for pairs only.</p>
+
+    <h3>Day codes for <code>timeslot</code></h3>
+    <p><code>M</code> or <code>MON</code>, <code>T</code> or <code>TUE</code>, <code>W</code> or <code>WED</code>,
+      <code>TH</code> or <code>THU</code>, <code>F</code> or <code>FRI</code>, plus <code>SAT</code> and <code>SUN</code>.
+      Times use 24-hour <code>HH:mm</code>.</p>
+
+    <h2 id="enrollments">Enrollments</h2>
+    <p>Uploaded into an academic period. One row per student per section.</p>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Field</th><th>Notes</th></tr></thead>
+      <tbody>
+        <tr><td><strong><code>studentMatriculationNumber</code></strong></td><td>An uploaded student.</td></tr>
+        <tr><td><strong><code>courseCode</code></strong></td><td>The section's course.</td></tr>
+        <tr><td><strong><code>sectionName</code></strong></td><td>A section in this period.</td></tr>
+      </tbody>
+    </table></div>
+    <p>Uploading an enrollment that already exists changes nothing, so it's safe to upload the full list again.</p>
+
+    <div class="pager">
+      <a href="webhooks.html">← Webhooks</a>
+      <a href="troubleshooting.html">Next: Troubleshooting →</a>
+    </div>
+  </main>
+</div>
+<script src="docs.js"></script>
+</body>
+</html>

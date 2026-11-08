@@ -25,4 +25,18 @@ public interface SectionLecturerRepository extends TenantAwareRepository<Section
             @Param("sectionId") UUID sectionId,
             @Param("lecturerId") UUID lecturerId
     );
+
+    /**
+     * Every live link of every section in a period, in one query. A bulk section upload replaces
+     * each section's links, and fetching them per section was one query per row.
+     */
+    @Query("""
+        SELECT sl FROM SectionLecturer sl
+        WHERE sl.school.id = :schoolId
+          AND (sl.isDeleted IS NULL OR sl.isDeleted = false)
+          AND sl.sectionLecturerSection.sectionAcademicPeriod.id = :academicPeriodId
+    """)
+    List<SectionLecturer> findAllLiveByAcademicPeriod(
+            @Param("schoolId") UUID schoolId,
+            @Param("academicPeriodId") UUID academicPeriodId);
 }

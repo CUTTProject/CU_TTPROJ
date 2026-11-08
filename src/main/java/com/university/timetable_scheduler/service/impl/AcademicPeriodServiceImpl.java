@@ -16,6 +16,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
@@ -25,14 +26,24 @@ public class AcademicPeriodServiceImpl implements AcademicPeriodService {
     private final AcademicPeriodMapper academicPeriodMapper;
     private final SchoolRepository schoolRepository;
     private final ActivityServiceImpl activityService;
+    private final AcademicPeriodGuard academicPeriodGuard;
 
     private School currentSchool() {
         return schoolRepository.findLiveById(TenantContext.getSchoolId())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid school context"));
     }
 
+    /** The end must come after the start, or the period would be over before it began. */
+    private static void requireEndAfterStart(LocalDateTime start, LocalDateTime end) {
+        if (start != null && end != null && !end.isAfter(start)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "academicPeriodEndDate must be after academicPeriodStartDate");
+        }
+    }
+
     @Override
     public CreateAcademicPeriodResponse createAcademicPeriod(CreateAcademicPeriodRequest request) {
+        requireEndAfterStart(request.getAcademicPeriodStartDate(), request.getAcademicPeriodEndDate());
         AcademicPeriod entity = new AcademicPeriod();
         entity.setSchool(currentSchool());
         entity.setAcademicPeriodName(request.getAcademicPeriodName());
@@ -45,7 +56,7 @@ public class AcademicPeriodServiceImpl implements AcademicPeriodService {
                 ActivityServiceImpl.label(saved.getAcademicPeriodName()) + " was created");
         CreateAcademicPeriodResponse response = new CreateAcademicPeriodResponse();
         CreateAcademicPeriodResponse.Data responseData = new CreateAcademicPeriodResponse.Data();
-        responseData.setAcademicPeriod(academicPeriodMapper.toResponse(saved));
+        responseData.setAcademicPeriod(academicPeriodMapper.toResponse(saved, academicPeriodGuard.now()));
         response.setData(responseData);
         return response;
     }
@@ -57,9 +68,15 @@ public class AcademicPeriodServiceImpl implements AcademicPeriodService {
                 request.getId(), request.getAcademicPeriodName(),
                 request.getAcademicPeriodSession(), request.getAcademicPeriodSemester(),
                 request.getAcademicPeriodStatus());
+        // The phase depends on the clock, so it is filtered here rather than in the query. A school
+        // has a handful of periods, so this costs nothing.
+        LocalDateTime now = academicPeriodGuard.now();
+        if (request.getAcademicPeriodPhase() != null) {
+            list = list.stream().filter(p -> p.phaseAt(now) == request.getAcademicPeriodPhase()).toList();
+        }
         ReadAcademicPeriodResponse response = new ReadAcademicPeriodResponse();
         ReadAcademicPeriodResponse.Data responseData = new ReadAcademicPeriodResponse.Data();
-        responseData.setAcademicPeriods(academicPeriodMapper.toResponseList(list));
+        responseData.setAcademicPeriods(academicPeriodMapper.toResponseList(list, now));
         response.setData(responseData);
         return response;
     }
@@ -69,10 +86,13 @@ public class AcademicPeriodServiceImpl implements AcademicPeriodService {
     public UpdateAcademicPeriodResponse updateAcademicPeriod(UpdateAcademicPeriodRequest request) {
         AcademicPeriod entity = academicPeriodRepository.findByIdAndSchoolId(request.getId(), TenantContext.getSchoolId())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "AcademicPeriod not found"));
+        // Not guarded: extending the end date or setting the status back to ACTIVE is how an
+        // ended or archived period is reopened.
         academicPeriodMapper.updateDtoToEntity(request, entity);
+        requireEndAfterStart(entity.getAcademicPeriodStartDate(), entity.getAcademicPeriodEndDate());
         UpdateAcademicPeriodResponse response = new UpdateAcademicPeriodResponse();
         UpdateAcademicPeriodResponse.Data responseData = new UpdateAcademicPeriodResponse.Data();
-        responseData.setAcademicPeriod(academicPeriodMapper.toResponse(entity));
+        responseData.setAcademicPeriod(academicPeriodMapper.toResponse(entity, academicPeriodGuard.now()));
         response.setData(responseData);
         return response;
     }

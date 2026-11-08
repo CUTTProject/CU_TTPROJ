@@ -24,6 +24,7 @@ import java.util.List;
 public class EventServiceImpl implements EventService {
     private final EventRepository eventRepository;
     private final SectionRepository sectionRepository;
+    private final AcademicPeriodGuard academicPeriodGuard;
     private final EventMapper eventMapper;
     private final SchoolRepository schoolRepository;
 
@@ -36,6 +37,7 @@ public class EventServiceImpl implements EventService {
     public CreateEventResponse createEvent(CreateEventRequest request) {
         Section section = sectionRepository.findByIdAndSchoolId(request.getEventSectionId(), TenantContext.getSchoolId())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Section not found"));
+        academicPeriodGuard.requireOpen(section);
         Event entity = new Event();
         entity.setSchool(currentSchool());
         entity.setEventSection(section);
@@ -67,9 +69,11 @@ public class EventServiceImpl implements EventService {
     public UpdateEventResponse updateEvent(UpdateEventRequest request) {
         Event entity = eventRepository.findByIdAndSchoolId(request.getId(), TenantContext.getSchoolId())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Event not found"));
+        academicPeriodGuard.requireOpen(entity.getEventSection());
         if (request.getEventSectionId() != null) {
             Section section = sectionRepository.findByIdAndSchoolId(request.getEventSectionId(), TenantContext.getSchoolId())
                     .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Section not found"));
+            academicPeriodGuard.requireOpen(section);
             entity.setEventSection(section);
         }
         if (request.getEventDuration() != null) entity.setEventDuration(request.getEventDuration());
@@ -86,6 +90,7 @@ public class EventServiceImpl implements EventService {
     public DeleteEventResponse deleteEvent(DeleteEventRequest request) {
         Event entity = eventRepository.findByIdAndSchoolId(request.getId(), TenantContext.getSchoolId())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Event not found"));
+        academicPeriodGuard.requireOpen(entity.getEventSection());
         entity.setIsDeleted(true);
         return new DeleteEventResponse();
     }

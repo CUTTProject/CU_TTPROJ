@@ -1,0 +1,83 @@
+courseCode,courseName,courseUnit,courseLevel,departmentCode
+CSC 101,Introduction to Computer Sciences,3,LEVEL_100,CSC
+PAU-CSC 111,Introduction to Software Packages,3,LEVEL_100,CSC
+MTH 101,Elementary Mathematics I,2,LEVEL_100,CSC
+PHY 101,General Physics I,2,LEVEL_100,CSC
+PHY 107,General Practical Physics I,3,LEVEL_100,CSC
+STA 111,Descriptive Statistics,3,LEVEL_100,CSC
+PAU-CSC 192,Introduction to Christian Theology,2,LEVEL_100,CSC
+CSC 201,Computer Programming I,3,LEVEL_200,CSC
+MTH 201,Mathematical Methods I,2,LEVEL_200,CSC
+SEN 201,Introduction to Software Engineering,2,LEVEL_200,CSC
+CSC 203,Discrete Structures,2,LEVEL_200,CSC
+PAU-CSC 211,Computer Hardware and Networking Essentials,3,LEVEL_200,CSC
+PAU-CSC 292,The Nature of Human Beings,2,LEVEL_200,CSC
+IFT 211,Digital Logic Design,2,LEVEL_200,CSC
+GST 212,Logic and Phlisophy,2,LEVEL_200,CSC
+ENT 211,Entrepreneuship,2,LEVEL_200,CSC
+CSC 301,Data Structures,3,LEVEL_300,CSC
+CSC 308,Operating Systems,3,LEVEL_300,CSC
+CSC 309,Artificial Intelligence,2,LEVEL_300,CSC
+CSC 322,Computer Science Innovation and New Technology,2,LEVEL_300,CSC
+PAU-CSC 312,Compiler Construction,3,LEVEL_300,CSC
+PAU-CSC 317,Introduction to Numerical Analysis,2,LEVEL_300,CSC
+GST 303,Nigeria Peoples and Culture,2,LEVEL_300,CSC
+GST 312,Peace Studies,2,LEVEL_300,CSC
+CSC 401,Research Methodology and Technical Report Writing,3,LEVEL_400,CSC
+CSC 403,Database Management II,3,LEVEL_400,CSC
+CSC 405,Software Engineering,3,LEVEL_400,CSC
+CSC 409,Human Computer Interface,2,LEVEL_400,CSC
+CSC 413,Distributed Computing System,3,LEVEL_400,CSC
+CSC 419,"Advances in Web, Mobile and Blockchain Development",3,LEVEL_400,CSC
+CSC 421,Introduction to Data Science and Engineering,3,LEVEL_400,CSC
+EEE 102,Introduction to Electrical and Electronic Engineering,2,LEVEL_100,EEE
+GET 101,Engineer in Society,1,LEVEL_100,EEE
+CHM 101,General Chemistry I,2,LEVEL_100,EEE
+CHM 107,General Practical Chemistry I,3,LEVEL_100,EEE
+PHY 102,General Physics II (Behaviour of Matter),2,LEVEL_100,EEE
+PAU-EEE 191,Introduction to Christian Theology,2,LEVEL_100,EEE
+GST 111,Communication in English,2,LEVEL_100,EEE
+GET 201,Applied Electricity I,3,LEVEL_200,EEE
+GET 203,Engineering Graphics and Solid Modeling II,2,LEVEL_200,EEE
+GET 205,Fundamentals of Fluid Mechanics,3,LEVEL_200,EEE
+GET 207,Applied Mechanics,3,LEVEL_200,EEE
+GET 209,Engineering Mathematics I,3,LEVEL_200,EEE
+GET 211,Computing & Software Engineering,3,LEVEL_200,EEE
+EEE 204,Electrical Engineering Materials,3,LEVEL_200,EEE
+PAU-EEE 292,The Nature of Human Beings,2,LEVEL_200,EEE
+EEE 321,Analogue Electronic Circuits,2,LEVEL_300,EEE
+EEE 311,Electric Circuit Theory I,2,LEVEL_300,EEE
+PAU-EEE 313,Laboratory Practicals I,2,LEVEL_300,EEE
+PAU-EEE 311,Electromechanical Systems,2,LEVEL_300,EEE
+GET 301,Engineering Mathematics III,3,LEVEL_300,EEE
+GET 305,Engineering Statistics & Data Analytics,3,LEVEL_300,EEE
+GET 306,Renewable Energy Systems & Technologies,3,LEVEL_300,EEE
+PAU-MEE 402,Engineering Economics,2,LEVEL_400,EEE
+PAU-EEE 403,Principles of Communication Engineering,2,LEVEL_400,EEE
+PAU-EEE 405,Electric Power Systems,2,LEVEL_400,EEE
+PAU-EEE 407,Introduction to Control Systems Engineering,3,LEVEL_400,EEE
+PAU-EEE 409,Power Electronics & Drives,2,LEVEL_400,EEE
+PAU-EEE 411,Laboratory Practicals III,2,LEVEL_400,EEE
+EEE 593,Final Year Project I,3,LEVEL_500,EEE
+GET 501,Engineering Project Management,3,LEVEL_500,EEE
+PAU,Introduction to Christian Theology,2,LEVEL_100,MCT
+MCT 102,Introduction to Mechanical Engineering,2,LEVEL_100,MCT
+PAU-MEE 192,Introduction to Christian Theology,2,LEVEL_100,MEE
+MEE 101,Introduction to Mechanical Engineering,2,LEVEL_100,MEE
+PAU-MEE 292,The Nature of Human Beings,2,LEVEL_200,MEE
+PAU-MEE 315,Control Systems Engineering,3,LEVEL_300,MEE
+PAU-MEE 331,Engineering Graphics and Solid Modelling III,2,LEVEL_300,MEE
+PAU-MEE 313,Manufacturing and Engineering Technology,2,LEVEL_300,MEE
+PAU-MCTE 302,Introduction To Robotics,2,LEVEL_300,MEE
+PAU-MEE 307,Theory of Machines I,2,LEVEL_300,MEE
+MEE 407,Advanced Mechanics of Materials,2,LEVEL_400,MEE
+MEE 403,Applied (Engineering) Thermodynamics I,2,LEVEL_400,MEE
+PAU-MEE 409,Corrosion Engineering and Protections,2,LEVEL_400,MEE
+MEE 405,Heat and Mass Transfer,3,LEVEL_400,MEE
+MEE 401,Mechanical (Machine) Engineering Design II,2,LEVEL_400,MEE
+MEE 590,B.Eng. Project I,3,LEVEL_500,MEE
+PAU-MEE 517,Industrial Automation and Control,2,LEVEL_500,MEE
+PAU-MEE 522,Automotive System Design,2,LEVEL_500,MEE
+COS 101,Introduction to Computer Sciences,3,LEVEL_100,SEN
+PAU-SEN 211,Computer Hardware and Networking Essentials,3,LEVEL_200,SEN
+PAU-SEN 292,The Nature of Human Beings,2,LEVEL_200,SEN

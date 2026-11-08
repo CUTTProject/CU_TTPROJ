@@ -10,6 +10,8 @@ import java.util.UUID;
 @Getter
 @Setter
 public class AcademicPeriodResponse {
+    /** Worked out from the dates and status when the response is built; see AcademicPeriodPhase. */
+    private AcademicPeriodEnum.AcademicPeriodPhase academicPeriodPhase;
     private UUID id;
     private String academicPeriodName;
     private String academicPeriodSession;

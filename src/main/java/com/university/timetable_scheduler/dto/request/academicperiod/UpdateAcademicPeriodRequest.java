@@ -1,5 +1,6 @@
 package com.university.timetable_scheduler.dto.request.academicperiod;
 
+import com.university.timetable_scheduler.status.AcademicPeriodEnum;
 import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -20,4 +21,6 @@ public class UpdateAcademicPeriodRequest {
     private String academicPeriodSemester;
     private LocalDateTime academicPeriodStartDate;
     private LocalDateTime academicPeriodEndDate;
+    /** INACTIVE archives the period (read-only); ACTIVE reopens it. */
+    private AcademicPeriodEnum.AcademicPeriodStatus academicPeriodStatus;
 }

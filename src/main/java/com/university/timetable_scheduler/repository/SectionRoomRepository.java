@@ -21,4 +21,18 @@ public interface SectionRoomRepository extends TenantAwareRepository<SectionRoom
     List<SectionRoom> findAllBySectionRoomSection_Id(
             @Param("sectionId") UUID sectionId,
             @Param("schoolId") UUID schoolId);
+
+    /**
+     * Every live link of every section in a period, in one query. A bulk section upload replaces
+     * each section's links, and fetching them per section was one query per row.
+     */
+    @Query("""
+        SELECT sr FROM SectionRoom sr
+        WHERE sr.school.id = :schoolId
+          AND (sr.isDeleted IS NULL OR sr.isDeleted = false)
+          AND sr.sectionRoomSection.sectionAcademicPeriod.id = :academicPeriodId
+    """)
+    List<SectionRoom> findAllLiveByAcademicPeriod(
+            @Param("schoolId") UUID schoolId,
+            @Param("academicPeriodId") UUID academicPeriodId);
 }

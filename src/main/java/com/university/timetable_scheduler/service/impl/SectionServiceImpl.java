@@ -68,6 +68,7 @@ public class SectionServiceImpl implements SectionService {
     private final SectionRepository sectionRepository;
     private final CourseRepository courseRepository;
     private final AcademicPeriodRepository academicPeriodRepository;
+    private final AcademicPeriodGuard academicPeriodGuard;
     private final SectionMapper sectionMapper;
     private final SchoolRepository schoolRepository;
     private final LecturerRepository lecturerRepository;
@@ -93,6 +94,7 @@ public class SectionServiceImpl implements SectionService {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Course not found"));
         AcademicPeriod academicPeriod = academicPeriodRepository.findByIdAndSchoolId(request.getSectionAcademicPeriodId(), schoolId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "AcademicPeriod not found"));
+        academicPeriodGuard.requireOpen(academicPeriod);
 
         SectionEnum.SectionSplit split = request.getSectionSplit() == null
                 ? SectionEnum.SectionSplit.NO : request.getSectionSplit();
@@ -198,6 +200,7 @@ public class SectionServiceImpl implements SectionService {
         UUID schoolId = TenantContext.getSchoolId();
         Section entity = sectionRepository.findByIdAndSchoolId(request.getId(), schoolId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Section not found"));
+        academicPeriodGuard.requireOpen(entity);
         boolean relating = request.getRelatedToSectionId() != null;
         boolean unrelating = Boolean.TRUE.equals(request.getRemoveRelatedTo());
         if (relating && unrelating) {
@@ -229,6 +232,7 @@ public class SectionServiceImpl implements SectionService {
         if (request.getSectionAcademicPeriodId() != null) {
             AcademicPeriod academicPeriod = academicPeriodRepository.findByIdAndSchoolId(request.getSectionAcademicPeriodId(), TenantContext.getSchoolId())
                     .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "AcademicPeriod not found"));
+            academicPeriodGuard.requireOpen(academicPeriod);
             entity.setSectionAcademicPeriod(academicPeriod);
         }
         if (request.getSectionDurationMinutes() != null) entity.setSectionDurationMinutes(request.getSectionDurationMinutes());
@@ -274,6 +278,7 @@ public class SectionServiceImpl implements SectionService {
     public DeleteSectionResponse deleteSection(DeleteSectionRequest request) {
         Section entity = sectionRepository.findByIdAndSchoolId(request.getId(), TenantContext.getSchoolId())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Section not found"));
+        academicPeriodGuard.requireOpen(entity);
         entity.setIsDeleted(true);
         return new DeleteSectionResponse();
     }
@@ -296,10 +301,13 @@ public class SectionServiceImpl implements SectionService {
                 (rows, report) -> processSectionRows(rows, report, period));
     }
 
+    /** The period a bulk upload writes into. Dry runs are refused too: the answer would be no. */
     private AcademicPeriod findPeriod(UUID academicPeriodId) {
-        return academicPeriodRepository.findByIdAndSchoolId(academicPeriodId, TenantContext.getSchoolId())
+        AcademicPeriod period = academicPeriodRepository.findByIdAndSchoolId(academicPeriodId, TenantContext.getSchoolId())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
                         "Academic period not found: " + academicPeriodId));
+        academicPeriodGuard.requireOpen(period);
+        return period;
     }
 
     /**
@@ -342,6 +350,9 @@ public class SectionServiceImpl implements SectionService {
                 .collect(Collectors.groupingBy(
                         sec -> BulkValues.key(sectionKey(sec.getSectionCourse().getCourseCode(), sec.getSectionName())),
                         LinkedHashMap::new, Collectors.toList()));
+        // A re-upload replaces each existing section's links and events. Loaded once for the whole
+        // period here; looking them up per section was five queries per row.
+        PeriodChildren children = existingByKey.isEmpty() ? PeriodChildren.EMPTY : loadChildren(schoolId, period);
 
         // Pre-pass, so a relatedTo can name a section further down the file and pairs are
         // checked across the whole file. Keys are of the related section (the row's) and the main
@@ -472,6 +483,7 @@ public class SectionServiceImpl implements SectionService {
             if (mainKey != null) claimedMainKeys.add(mainKey);
 
             Section section = sectionsByKey.get(key);
+            boolean isNew = false;
             if (section == null) {
                 List<Section> existing = existingByKey.getOrDefault(key, List.of());
                 if (existing.isEmpty()) {
@@ -480,13 +492,12 @@ public class SectionServiceImpl implements SectionService {
                     section.setSectionCourse(course);
                     section.setSectionName(row.getSectionName().trim());
                     section.setSectionAcademicPeriod(period);
-                    section = sectionRepository.save(section);
-                    createdSections.add(section.getId());
+                    isNew = true;
                 } else {
                     section = existing.get(0);
-                    clearSection(schoolId, section);
+                    clearSection(section, children);
                     if (existing.size() > 1) {
-                        mergeDuplicates(schoolId, section, existing.subList(1, existing.size()));
+                        mergeDuplicates(schoolId, section, existing.subList(1, existing.size()), children);
                         report.warn(bulkRow, "sectionName", row.getSectionName(), (existing.size() - 1)
                                 + " duplicate copies of this section from earlier uploads were merged into it");
                     }
@@ -502,6 +513,13 @@ public class SectionServiceImpl implements SectionService {
             section.setSectionEventType(eventType);
             // The row alone decides whether this section is taught as part of another; paired below.
             section.setSectionMergedInto(null);
+            if (isNew) {
+                // Saved only now that every field is set: persisting first and then setting them
+                // made Hibernate write each new section twice, an INSERT and then an UPDATE.
+                section = sectionRepository.save(section);
+                sectionsByKey.put(key, section);
+                createdSections.add(section.getId());
+            }
             mainKeyBySection.put(section, mainKey);
             rowBySection.put(section, bulkRow);
 
@@ -565,8 +583,7 @@ public class SectionServiceImpl implements SectionService {
         for (Section section : mainKeyBySection.keySet()) {
             if (section.getSectionDurationMinutes() == null) continue;  // events defined one by one
             if (!createdSections.contains(section.getId())) {
-                eventRepository.findEventByFilter(schoolId, null, section.getId(), null, null)
-                        .forEach(e -> e.setIsDeleted(true));
+                children.eventsOf(section).forEach(e -> e.setIsDeleted(true));
             }
             events.addAll(SectionEventPlanner.plan(section, random));
         }
@@ -628,19 +645,51 @@ public class SectionServiceImpl implements SectionService {
      * outright: SectionRepository's lecturer-conflict query does not filter soft-deleted
      * SectionLecturer rows, so a soft-deleted link would still create clashes.
      */
-    private void clearSection(UUID schoolId, Section section) {
-        sectionLecturerRepository.deleteAll(
-                sectionLecturerRepository.findSectionLecturerByFilter(schoolId, null, section.getId(), null));
-        sectionRoomRepository.deleteAll(
-                sectionRoomRepository.findAllBySectionRoomSection_Id(section.getId(), schoolId));
-        sectionTimeslotRepository.deleteAll(
-                sectionTimeslotRepository.findSectionTimeslotByFilter(schoolId, null, section.getId(), null));
-        eventRepository.findEventByFilter(schoolId, null, section.getId(), null, null)
-                .forEach(e -> e.setIsDeleted(true));
+    /**
+     * The live links and events of every section in a period, grouped by section, so a bulk upload
+     * can replace them without a query per section.
+     */
+    private record PeriodChildren(Map<UUID, List<SectionLecturer>> lecturers,
+                                  Map<UUID, List<SectionRoom>> rooms,
+                                  Map<UUID, List<SectionTimeslot>> timeslots,
+                                  Map<UUID, List<Event>> events) {
+
+        static final PeriodChildren EMPTY = new PeriodChildren(Map.of(), Map.of(), Map.of(), Map.of());
+
+        List<Event> eventsOf(Section section) {
+            return events.getOrDefault(section.getId(), List.of());
+        }
+    }
+
+    private PeriodChildren loadChildren(UUID schoolId, AcademicPeriod period) {
+        UUID periodId = period.getId();
+        return new PeriodChildren(
+                bySection(sectionLecturerRepository.findAllLiveByAcademicPeriod(schoolId, periodId),
+                        SectionLecturer::getSectionLecturerSection),
+                bySection(sectionRoomRepository.findAllLiveByAcademicPeriod(schoolId, periodId),
+                        SectionRoom::getSectionRoomSection),
+                bySection(sectionTimeslotRepository.findAllLiveByAcademicPeriod(schoolId, periodId),
+                        SectionTimeslot::getSectionTimeslotSection),
+                bySection(eventRepository.findAllBySchoolIdAndAcademicPeriodId(schoolId, periodId),
+                        Event::getEventSection));
+    }
+
+    private static <T> Map<UUID, List<T>> bySection(List<T> rows, java.util.function.Function<T, Section> section) {
+        return rows.stream()
+                .filter(row -> section.apply(row) != null)
+                .collect(Collectors.groupingBy(row -> section.apply(row).getId()));
+    }
+
+    private void clearSection(Section section, PeriodChildren children) {
+        UUID id = section.getId();
+        sectionLecturerRepository.deleteAll(children.lecturers().getOrDefault(id, List.of()));
+        sectionRoomRepository.deleteAll(children.rooms().getOrDefault(id, List.of()));
+        sectionTimeslotRepository.deleteAll(children.timeslots().getOrDefault(id, List.of()));
+        children.eventsOf(section).forEach(e -> e.setIsDeleted(true));
     }
 
     /** Moves the duplicates' enrollments onto {@code kept}, then deletes the duplicates. */
-    private void mergeDuplicates(UUID schoolId, Section kept, List<Section> duplicates) {
+    private void mergeDuplicates(UUID schoolId, Section kept, List<Section> duplicates, PeriodChildren children) {
         Set<UUID> keptStudents = new HashSet<>();
         enrollmentRepository.findEnrollmentByFilter(schoolId, null, null, kept.getId(), null)
                 .forEach(e -> keptStudents.add(e.getEnrollmentStudent().getId()));
@@ -652,7 +701,7 @@ public class SectionServiceImpl implements SectionService {
                     enrollment.setIsDeleted(true);
                 }
             }
-            clearSection(schoolId, duplicate);
+            clearSection(duplicate, children);
             duplicate.setIsDeleted(true);
         }
     }

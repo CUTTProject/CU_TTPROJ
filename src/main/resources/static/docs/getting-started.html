@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Getting started · Timetable Scheduler Docs</title>
+  <link rel="stylesheet" href="docs.css">
+</head>
+<body>
+<div class="layout">
+  <aside class="sidebar">
+    <div class="sidebar-head">
+      <a class="brand" href="index.html">Timetable Scheduler<span>Documentation</span></a>
+      <button class="menu-toggle" type="button" aria-expanded="false">Menu</button>
+    </div>
+    <nav>
+      <div class="nav-label">Start here</div>
+      <a href="index.html">Overview</a>
+      <a href="getting-started.html">Getting started</a>
+      <div class="nav-label">Guides</div>
+      <a href="upload-data.html">Uploading your data</a>
+      <a href="generate.html">Generating a timetable</a>
+      <a href="webhooks.html">Webhooks</a>
+      <div class="nav-label">Reference</div>
+      <a href="csv-reference.html">Data fields</a>
+      <a href="troubleshooting.html">Troubleshooting</a>
+      <a href="how-it-works.html">How the scheduler works</a>
+      <a href="/swagger-ui/index.html">API reference ↗</a>
+    </nav>
+  </aside>
+
+  <main>
+    <h1>Getting started</h1>
+    <p class="lead">Register your school, sign in, and check that everything is working. This takes about five minutes.</p>
+
+    <h2>1. Register your school</h2>
+    <p>Each school has one admin account. Its email and password are what you'll sign in with.</p>
+    <pre><code>curl -X POST <span class="base-url">https://your-server</span>/api/schools/create \
+  -H "Content-Type: application/json" \
+  -d '{
+    "schoolName": "Example University",
+    "schoolAddress": "1 University Road",
+    "schoolPhone": "+234 800 000 0000",
+    "schoolAdminEmail": "timetable@example.edu",
+    "schoolAdminPassword": "Strong@Pass2026",
+    "schoolDayStartHour": "08:00",
+    "schoolDayEndHour": "17:00",
+    "schoolBreakStartHour": "12:00",
+    "schoolBreakEndHour": "13:00"
+  }'</code></pre>
+
+    <h3>About the times</h3>
+    <ul>
+      <li><strong>School day</strong>: classes are only placed between the start and end hours, Monday to Friday.</li>
+      <li><strong>Break</strong>: nothing is ever scheduled during it. It must fall inside the school day.</li>
+      <li>Use 24-hour time, <code>HH:mm</code>.</li>
+    </ul>
+    <p>The password needs at least 8 characters, with an uppercase letter, a lowercase letter, a number and one of
+      <code>@ $ ! % * ? &amp;</code>. No other characters are allowed, including spaces, hyphens and
+      <code>#</code>.</p>
+
+    <h2 id="sign-in">2. Sign in</h2>
+    <pre><code>curl -X POST <span class="base-url">https://your-server</span>/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "timetable@example.edu",
+    "password": "Strong@Pass2026",
+    "loginType": "SCHOOL"
+  }'</code></pre>
+    <p>The response contains an <code>authToken</code>:</p>
+    <pre><code>{
+  "school": { "schoolName": "Example University", ... },
+  "authToken": "eyJhbGciOiJIUzI1NiJ9..."
+}</code></pre>
+
+    <h2>3. Use the token</h2>
+    <p>Every other request must include the token in an <code>Authorization</code> header. To save typing,
+      store it in your terminal session once:</p>
+    <pre><code>export BASE=<span class="base-url">https://your-server</span>
+export TOKEN=eyJhbGciOiJIUzI1NiJ9...</code></pre>
+    <p>The rest of these docs use <code>$BASE</code> and <code>$TOKEN</code>.</p>
+
+    <div class="warn">
+      <p><strong>Tokens expire after one hour.</strong> If requests suddenly return <code>403</code> with an empty body, sign in again
+        and update <code>TOKEN</code>.</p>
+    </div>
+
+    <h2>4. Check where you are</h2>
+    <p>The onboarding guide lists every setup step in order, and shows which ones your school has finished
+      and which one to do next:</p>
+    <pre><code>curl $BASE/api/onboarding/guide -H "Authorization: Bearer $TOKEN"</code></pre>
+    <p>Each step tells you its CSV and JSON endpoints, the fields it accepts, what it depends on,
+      and whether it's <code>completed</code> and <code>ready</code>. You can come back to it at any point
+      during setup.</p>
+
+    <div class="note">
+      <p><strong>Prefer clicking to typing?</strong> Open the <a href="/swagger-ui/index.html">API reference</a>,
+        click <em>Authorize</em>, paste your token, and use <em>Try it out</em> on any endpoint.</p>
+    </div>
+
+    <div class="pager">
+      <a href="index.html">← Overview</a>
+      <a href="upload-data.html">Next: Uploading your data →</a>
+    </div>
+  </main>
+</div>
+<script src="docs.js"></script>
+</body>
+</html>

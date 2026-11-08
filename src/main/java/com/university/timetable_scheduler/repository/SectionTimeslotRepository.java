@@ -25,4 +25,18 @@ public interface SectionTimeslotRepository extends TenantAwareRepository<Section
             @Param("sectionId") UUID sectionId,
             @Param("timeslotId") UUID timeslotId
     );
+
+    /**
+     * Every live link of every section in a period, in one query. A bulk section upload replaces
+     * each section's links, and fetching them per section was one query per row.
+     */
+    @Query("""
+        SELECT st FROM SectionTimeslot st
+        WHERE st.school.id = :schoolId
+          AND (st.isDeleted IS NULL OR st.isDeleted = false)
+          AND st.sectionTimeslotSection.sectionAcademicPeriod.id = :academicPeriodId
+    """)
+    List<SectionTimeslot> findAllLiveByAcademicPeriod(
+            @Param("schoolId") UUID schoolId,
+            @Param("academicPeriodId") UUID academicPeriodId);
 }

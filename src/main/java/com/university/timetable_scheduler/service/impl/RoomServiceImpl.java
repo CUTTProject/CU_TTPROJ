@@ -107,7 +107,7 @@ public class RoomServiceImpl implements RoomService {
     @Override
     @Transactional
     public BulkUploadResponse bulkUploadRoomsArray(BulkUploadRoomArrayRequest request, boolean dryRun) {
-        return bulkUploadSupport.importRows(request.getRooms(),
+        return bulkUploadSupport.importRows(request.getRows(),
                 BulkUploadOptions.of(BulkUploadEnum.BulkDataset.ROOMS, dryRun), this::processRoomRows);
     }
 

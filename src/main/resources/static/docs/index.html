@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Overview · Timetable Scheduler Docs</title>
+  <link rel="stylesheet" href="docs.css">
+</head>
+<body>
+<div class="layout">
+  <aside class="sidebar">
+    <div class="sidebar-head">
+      <a class="brand" href="index.html">Timetable Scheduler<span>Documentation</span></a>
+      <button class="menu-toggle" type="button" aria-expanded="false">Menu</button>
+    </div>
+    <nav>
+      <div class="nav-label">Start here</div>
+      <a href="index.html">Overview</a>
+      <a href="getting-started.html">Getting started</a>
+      <div class="nav-label">Guides</div>
+      <a href="upload-data.html">Uploading your data</a>
+      <a href="generate.html">Generating a timetable</a>
+      <a href="webhooks.html">Webhooks</a>
+      <div class="nav-label">Reference</div>
+      <a href="csv-reference.html">Data fields</a>
+      <a href="troubleshooting.html">Troubleshooting</a>
+      <a href="how-it-works.html">How the scheduler works</a>
+      <a href="/swagger-ui/index.html">API reference ↗</a>
+    </nav>
+  </aside>
+
+  <main>
+    <h1>Timetable Scheduler</h1>
+    <p class="lead">Upload your school's departments, lecturers, rooms, courses and students. Get back a
+      clash-free weekly timetable.</p>
+
+    <h2>What it does</h2>
+    <p>The scheduler finds a time and a room for every class in your school's week, so that:</p>
+    <ul>
+      <li>no lecturer is in two places at once,</li>
+      <li>no student has two classes at the same time,</li>
+      <li>no room is booked twice, and every class gets a room big enough for it,</li>
+      <li>nothing is placed in your daily break or outside your school day.</li>
+    </ul>
+    <p>The result is available as a PDF and can also be sent automatically to your own system.</p>
+
+    <h2>How it works, in five steps</h2>
+    <ol class="steps">
+      <li><strong>Register your school</strong> and set your school day and break times.
+        <a href="getting-started.html">Getting started</a></li>
+      <li><strong>Upload your data</strong> as CSV files or JSON: departments, lecturers, rooms, programmes,
+        courses, curriculum and students. <a href="upload-data.html">Uploading your data</a></li>
+      <li><strong>Create an academic period</strong>, such as <em>2026/2027 First Semester</em>.</li>
+      <li><strong>Upload the period's sections and enrollments</strong>: which classes run this period,
+        who teaches them, and which students take them.</li>
+      <li><strong>Generate.</strong> The scheduler works in the background and tells you when the timetable
+        is ready. <a href="generate.html">Generating a timetable</a></li>
+    </ol>
+
+    <h2>What you'll need</h2>
+    <ul>
+      <li>Your school's data, in either form:
+        <ul>
+          <li><strong>a spreadsheet</strong> you can export to CSV (Excel, Google Sheets and Numbers all work), or</li>
+          <li><strong>a system that can send JSON</strong>, such as your student records or HR system, to keep
+            the data in sync automatically.</li>
+        </ul>
+      </li>
+      <li>A tool for sending web requests. These docs use <code>curl</code>, which is built into macOS,
+        Linux and Windows 10+. You can also use the <a href="/swagger-ui/index.html">API reference</a>
+        and send requests from your browser, without installing anything.</li>
+    </ul>
+
+    <div class="note">
+      <p><strong>Want to try it first?</strong> Download the <a href="csv-reference.html#samples">sample
+        CSV files</a>, a complete example school, and follow the guides with them.</p>
+    </div>
+
+    <h2>Your server address</h2>
+    <p>Every example in these docs uses this address:</p>
+    <pre><code class="base-url">https://your-server</code></pre>
+
+    <div class="pager">
+      <a href="getting-started.html">Next: Getting started →</a>
+    </div>
+  </main>
+</div>
+<script src="docs.js"></script>
+</body>
+</html>

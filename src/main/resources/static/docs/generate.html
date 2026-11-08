@@ -1,0 +1,195 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Generating a timetable · Timetable Scheduler Docs</title>
+  <link rel="stylesheet" href="docs.css">
+</head>
+<body>
+<div class="layout">
+  <aside class="sidebar">
+    <div class="sidebar-head">
+      <a class="brand" href="index.html">Timetable Scheduler<span>Documentation</span></a>
+      <button class="menu-toggle" type="button" aria-expanded="false">Menu</button>
+    </div>
+    <nav>
+      <div class="nav-label">Start here</div>
+      <a href="index.html">Overview</a>
+      <a href="getting-started.html">Getting started</a>
+      <div class="nav-label">Guides</div>
+      <a href="upload-data.html">Uploading your data</a>
+      <a href="generate.html">Generating a timetable</a>
+      <a href="webhooks.html">Webhooks</a>
+      <div class="nav-label">Reference</div>
+      <a href="csv-reference.html">Data fields</a>
+      <a href="troubleshooting.html">Troubleshooting</a>
+      <a href="how-it-works.html">How the scheduler works</a>
+      <a href="/swagger-ui/index.html">API reference ↗</a>
+    </nav>
+  </aside>
+
+  <main>
+    <h1>Generating a timetable</h1>
+    <p class="lead">Create an academic period, add its classes, then let the scheduler work.</p>
+
+    <h2 id="period">1. Create an academic period</h2>
+    <p>A period is one semester or term. Each period has its own sections, enrollments and timetable.</p>
+    <pre><code>curl -X POST $BASE/api/academic-periods/create \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "academicPeriodName": "2026/2027 First Semester",
+    "academicPeriodSession": "2026/2027",
+    "academicPeriodSemester": "FIRST",
+    "academicPeriodStartDate": "2026-09-14T00:00:00",
+    "academicPeriodEndDate": "2027-01-29T00:00:00"
+  }'</code></pre>
+    <p>Keep the <code>id</code> from the response. You'll need it for every step below:</p>
+    <pre><code>export PERIOD=3f2b...   # data.academicPeriod.id</code></pre>
+
+    <h3 id="period-ends">When a period ends</h3>
+    <p>Each period shows an <code>academicPeriodPhase</code>, worked out from its dates:</p>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Phase</th><th>When</th><th>Can you change it?</th></tr></thead>
+        <tbody>
+          <tr><td><code>UPCOMING</code></td><td>Before the start date</td><td>Yes. Set it up ahead of time.</td></tr>
+          <tr><td><code>IN_PROGRESS</code></td><td>Between the start and end dates</td><td>Yes</td></tr>
+          <tr><td><code>ENDED</code></td><td>From the end date onwards</td><td>No, it's read-only</td></tr>
+          <tr><td><code>ARCHIVED</code></td><td>You set its status to <code>INACTIVE</code></td><td>No, it's read-only</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>A period ends at the exact <strong>date and time</strong> in <code>academicPeriodEndDate</code>, in
+      <strong>UTC</strong>. A read-only period no longer accepts section or enrollment uploads (including dry runs),
+      edits, or new generations. You can still read its data and download its timetable at any time.</p>
+    <p>The end date must be after the start date.</p>
+    <p><strong>To reopen a period</strong>, update it: extend its end date, or set an archived period back to
+      <code>ACTIVE</code>.</p>
+    <pre><code>curl -X PUT $BASE/api/academic-periods/update \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{ "id": "'$PERIOD'", "academicPeriodEndDate": "2027-02-12T00:00:00" }'</code></pre>
+    <p>To archive a period early, send <code>"academicPeriodStatus": "INACTIVE"</code> instead. To list only some
+      periods, filter by phase: <code>GET /api/academic-periods/read?academicPeriodPhase=IN_PROGRESS</code>.</p>
+
+    <h2>2. Upload sections and enrollments</h2>
+    <p>A <strong>section</strong> is one group taking a course: who teaches it, how many students, and how many
+      minutes a week it runs. <strong>Enrollments</strong> say which students are in which section. This is what
+      the scheduler uses to stop two of a student's classes landing at the same time.</p>
+    <div class="tabs">
+      <div class="tab-list" role="tablist">
+        <button data-tab="csv">CSV file</button>
+        <button data-tab="json">JSON</button>
+      </div>
+      <div class="tab-panel" data-panel="csv">
+        <pre><code>curl -X POST "$BASE/api/sections/bulk-upload?academicPeriodId=$PERIOD" \
+  -H "Authorization: Bearer $TOKEN" -F "file=@sections.csv"
+
+curl -X POST "$BASE/api/enrollments/bulk-upload?academicPeriodId=$PERIOD" \
+  -H "Authorization: Bearer $TOKEN" -F "file=@enrollments.csv"</code></pre>
+      </div>
+      <div class="tab-panel" data-panel="json" hidden>
+        <p>The period id goes in the body, next to <code>rows</code>:</p>
+        <pre><code>curl -X POST $BASE/api/sections/bulk-upload/array \
+  -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
+  -d '{
+    "academicPeriodId": "'$PERIOD'",
+    "rows": [
+      { "courseCode": "CSC 101", "sectionName": "CSC 101-CSC", "sectionEnrollmentSize": 55,
+        "lecturerStaffNumbers": "L001", "sectionDurationMinutes": 180,
+        "eventType": "LAB", "split": "yes" }
+    ]
+  }'
+
+curl -X POST $BASE/api/enrollments/bulk-upload/array \
+  -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
+  -d '{
+    "academicPeriodId": "'$PERIOD'",
+    "rows": [
+      { "studentMatriculationNumber": "SCHOOL/2024/CSC/0001",
+        "courseCode": "CSC 101", "sectionName": "CSC 101-CSC" }
+    ]
+  }'</code></pre>
+      </div>
+    </div>
+    <p>See <a href="csv-reference.html#sections">Sections</a> for splitting a course into several meetings,
+      teaching two sections together, and fixing a class to a room or time.</p>
+
+    <h2>3. Start generation</h2>
+    <pre><code>curl -X POST "$BASE/api/time-table/generate?academicPeriodId=$PERIOD" \
+  -H "Authorization: Bearer $TOKEN"</code></pre>
+    <p>This returns straight away. The scheduler keeps working in the background:</p>
+    <pre><code>{
+  "responseCode": "202 ACCEPTED",
+  "responseMessage": "Generation queued. No webhook is configured, so poll the status url.",
+  "data": {
+    "jobId": "a71c...",
+    "status": "QUEUED",
+    "statusUrl": "/api/time-table/generate/a71c..."
+  }
+}</code></pre>
+
+    <h2>4. Wait for it to finish</h2>
+    <p>Generation takes up to a few minutes, depending on the size of your school. There are two ways to find
+      out when it's done:</p>
+    <ul>
+      <li><strong>Check the status</strong>: call the <code>statusUrl</code> every 15–30 seconds.</li>
+      <li><strong>Get notified</strong>: set up a <a href="webhooks.html">webhook</a> and the finished timetable
+        is sent to your system automatically.</li>
+    </ul>
+    <pre><code>curl $BASE/api/time-table/generate/a71c... -H "Authorization: Bearer $TOKEN"</code></pre>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>status</th><th>Meaning</th></tr></thead>
+        <tbody>
+          <tr><td><code>QUEUED</code></td><td>Waiting to start.</td></tr>
+          <tr><td><code>RUNNING</code></td><td>Building the timetable.</td></tr>
+          <tr><td><code>SUCCEEDED</code></td><td>Finished. Check <code>feasible</code> below.</td></tr>
+          <tr><td><code>FAILED</code></td><td>No timetable was produced. <code>failureMessage</code> says why.</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h2>5. Read the result</h2>
+    <p>When the status is <code>SUCCEEDED</code>, check these fields:</p>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Field</th><th>Meaning</th></tr></thead>
+        <tbody>
+          <tr><td><code>feasible: true</code></td><td>Every class was placed with no clashes. You're done.</td></tr>
+          <tr><td><code>feasible: false</code></td><td>The scheduler ran out of time with some clashes left.
+            See <a href="troubleshooting.html#not-feasible">Not feasible</a>.</td></tr>
+          <tr><td><code>scheduledEvents</code> / <code>totalEvents</code></td><td>How many class meetings were given a
+            time, out of how many there are.</td></tr>
+          <tr><td><code>stopReason</code></td><td><code>FEASIBLE_SOLUTION_FOUND</code>, <code>TIME_LIMIT_REACHED</code>,
+            or <code>NOTHING_TO_SOLVE</code> (no sections, rooms or times to work with).</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h2>6. Download the timetable</h2>
+    <pre><code>curl "$BASE/api/time-table/download/pdf?academicPeriodId=$PERIOD" \
+  -H "Authorization: Bearer $TOKEN" -o timetable.pdf</code></pre>
+    <p>The PDF lists every class by day, with its time, room and lecturer. It also lists any class that couldn't
+      be placed, and why.</p>
+    <p>The timetable is saved, so you can download it again at any time without generating it again.
+      Generating again replaces it.</p>
+
+    <h3>Optional: see what clashes with what</h3>
+    <p>The conflict graph shows which sections can never run at the same time, because they share a lecturer
+      or students. Download it and paste it into
+      <a href="https://dreampuf.github.io/GraphvizOnline/" rel="noopener">Graphviz Online</a> to view it.</p>
+    <pre><code>curl "$BASE/api/time-table/conflict-graph/download?academicPeriodId=$PERIOD" \
+  -H "Authorization: Bearer $TOKEN" -o conflict-graph.dot</code></pre>
+
+    <div class="pager">
+      <a href="upload-data.html">← Uploading your data</a>
+      <a href="webhooks.html">Next: Webhooks →</a>
+    </div>
+  </main>
+</div>
+<script src="docs.js"></script>
+</body>
+</html>

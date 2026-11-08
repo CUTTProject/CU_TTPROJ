@@ -2,6 +2,7 @@ package com.university.timetable_scheduler.generation;
 
 import com.university.timetable_scheduler.dto.response.timetable.TimetableResponse;
 import com.university.timetable_scheduler.entity.AcademicPeriod;
+import com.university.timetable_scheduler.service.impl.AcademicPeriodGuard;
 import com.university.timetable_scheduler.service.impl.ActivityServiceImpl;
 import com.university.timetable_scheduler.service.impl.TimetableServiceImpl;
 import com.university.timetable_scheduler.solver.CspModel;
@@ -55,6 +56,7 @@ public class TimetableGenerationRunner {
     private final Clock clock;
     private final ThreadPoolTaskExecutor solverExecutor;
     private final ActivityServiceImpl activityService;
+    private final AcademicPeriodGuard academicPeriodGuard;
 
     // Explicit because Lombok does not copy @Qualifier onto constructor parameters, and there
     // are two ThreadPoolTaskExecutor beans.'
@@ -65,7 +67,8 @@ public class TimetableGenerationRunner {
                                      SolverParameters solverParameters,
                                      Clock clock,
                                      @Qualifier(AsyncConfig.SOLVER_EXECUTOR) ThreadPoolTaskExecutor solverExecutor,
-                                     ActivityServiceImpl activityService) {
+                                     ActivityServiceImpl activityService,
+                                     AcademicPeriodGuard academicPeriodGuard) {
         this.timetableService = timetableService;
         this.registry = registry;
         this.webhookService = webhookService;
@@ -74,6 +77,7 @@ public class TimetableGenerationRunner {
         this.clock = clock;
         this.solverExecutor = solverExecutor;
         this.activityService = activityService;
+        this.academicPeriodGuard = academicPeriodGuard;
     }
 
     /**
@@ -85,6 +89,8 @@ public class TimetableGenerationRunner {
     public GenerationJob submit(String rawAcademicPeriodId) {
         UUID schoolId = TenantContext.getSchoolId();
         AcademicPeriod period = timetableService.resolvePeriod(schoolId, rawAcademicPeriodId);
+        // An ended period's timetable is a record; regenerating would overwrite it.
+        academicPeriodGuard.requireOpen(period);
         UUID periodId = period.getId();
 
         GenerationJob job = registry.reserve(schoolId, periodId).orElseThrow(() -> {

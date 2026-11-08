@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>How the scheduler works · Timetable Scheduler Docs</title>
+  <link rel="stylesheet" href="docs.css">
+</head>
+<body>
+<div class="layout">
+  <aside class="sidebar">
+    <div class="sidebar-head">
+      <a class="brand" href="index.html">Timetable Scheduler<span>Documentation</span></a>
+      <button class="menu-toggle" type="button" aria-expanded="false">Menu</button>
+    </div>
+    <nav>
+      <div class="nav-label">Start here</div>
+      <a href="index.html">Overview</a>
+      <a href="getting-started.html">Getting started</a>
+      <div class="nav-label">Guides</div>
+      <a href="upload-data.html">Uploading your data</a>
+      <a href="generate.html">Generating a timetable</a>
+      <a href="webhooks.html">Webhooks</a>
+      <div class="nav-label">Reference</div>
+      <a href="csv-reference.html">Data fields</a>
+      <a href="troubleshooting.html">Troubleshooting</a>
+      <a href="how-it-works.html">How the scheduler works</a>
+      <a href="/swagger-ui/index.html">API reference ↗</a>
+    </nav>
+  </aside>
+
+  <main>
+    <h1>How the scheduler works</h1>
+    <p class="lead">You don't need this page to use the scheduler. It's here if you're curious, or need to explain
+      the results to colleagues.</p>
+
+    <h2>From sections to meetings</h2>
+    <p>Each section becomes one or more weekly <strong>meetings</strong>, depending on its duration and its
+      <code>split</code> setting. A 180-minute, 3-unit section with <code>split=yes</code> becomes a 120-minute
+      meeting and a 60-minute meeting. The scheduler's job is to give every meeting a day, a start time and a room.</p>
+
+    <h2>Your week becomes a grid</h2>
+    <p>Your school day, Monday to Friday, is divided into equal slots sized to fit your meetings. The daily break
+      is left out. A 120-minute meeting needs two 60-minute slots in a row on the same day, without the break in
+      the middle.</p>
+
+    <h2>The rules</h2>
+    <p>A timetable is <strong>feasible</strong> when none of these are broken:</p>
+    <ul>
+      <li>A lecturer has at most one meeting at a time.</li>
+      <li>A student has at most one meeting at a time. Two sections that share any students can never run at
+        the same time.</li>
+      <li>A room holds at most one meeting at a time.</li>
+      <li>Each meeting is in a room with enough seats, and within any <code>rooms</code> and <code>timeslot</code>
+        restrictions you set.</li>
+    </ul>
+
+    <h2>The search</h2>
+    <p>There are far too many possible timetables to try them all, so the scheduler searches smartly in rounds:</p>
+    <ol class="steps">
+      <li><strong>Build.</strong> A group of independent builders each assemble a full timetable, placing one
+        meeting at a time and preferring spots that cause the fewest clashes.</li>
+      <li><strong>Repair.</strong> Each timetable is then improved by repeatedly picking a clashing meeting and
+        moving it to the spot with the fewest clashes.</li>
+      <li><strong>Learn.</strong> Placements that appeared in the best timetables are remembered and become more
+        likely in the next round. Placements that didn't help gradually fade.</li>
+    </ol>
+    <p>This is an <em>ant colony</em> method, so called because it works like ants finding the shortest path to
+      food: good routes are reinforced, and poor ones fade.</p>
+    <p>The search stops as soon as it finds a timetable with no clashes, or when its time limit runs out. In
+      that case it returns the best timetable it found, marked <code>feasible: false</code>.</p>
+
+    <h2>Why results can differ between runs</h2>
+    <p>Each run makes random choices, so two runs on the same data can give two different, equally valid
+      timetables. If a run ends with clashes, another run may find a clean one.</p>
+
+    <h2>When more time won't help</h2>
+    <p>Some meetings can't be placed anywhere, for example a section with more students than your largest room.
+      The scheduler spots these before searching and reports them separately, with the reason, so you can fix the
+      data instead of waiting.</p>
+
+    <div class="pager">
+      <a href="troubleshooting.html">← Troubleshooting</a>
+    </div>
+  </main>
+</div>
+<script src="docs.js"></script>
+</body>
+</html>

@@ -240,7 +240,7 @@ public class ProgramServiceImpl implements ProgramService {
     @Override
     @Transactional
     public BulkUploadResponse bulkUploadProgramsArray(BulkUploadProgramArrayRequest request, boolean dryRun) {
-        return bulkUploadSupport.importRows(request.getPrograms(),
+        return bulkUploadSupport.importRows(request.getRows(),
                 BulkUploadOptions.of(BulkUploadEnum.BulkDataset.PROGRAMS, dryRun), this::processProgramRows);
     }
 

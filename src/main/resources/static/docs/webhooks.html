@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Webhooks · Timetable Scheduler Docs</title>
+  <link rel="stylesheet" href="docs.css">
+</head>
+<body>
+<div class="layout">
+  <aside class="sidebar">
+    <div class="sidebar-head">
+      <a class="brand" href="index.html">Timetable Scheduler<span>Documentation</span></a>
+      <button class="menu-toggle" type="button" aria-expanded="false">Menu</button>
+    </div>
+    <nav>
+      <div class="nav-label">Start here</div>
+      <a href="index.html">Overview</a>
+      <a href="getting-started.html">Getting started</a>
+      <div class="nav-label">Guides</div>
+      <a href="upload-data.html">Uploading your data</a>
+      <a href="generate.html">Generating a timetable</a>
+      <a href="webhooks.html">Webhooks</a>
+      <div class="nav-label">Reference</div>
+      <a href="csv-reference.html">Data fields</a>
+      <a href="troubleshooting.html">Troubleshooting</a>
+      <a href="how-it-works.html">How the scheduler works</a>
+      <a href="/swagger-ui/index.html">API reference ↗</a>
+    </nav>
+  </aside>
+
+  <main>
+    <h1>Webhooks</h1>
+    <p class="lead">Have the finished timetable sent to your own system, instead of checking for it.</p>
+
+    <p>A webhook is an address on your server that the scheduler sends a message to when something happens,
+      such as a timetable finishing. It's optional. Without one, you can
+      <a href="generate.html">check the status</a> yourself.</p>
+
+    <h2>Set it up</h2>
+    <pre><code>curl -X PUT $BASE/api/schools/webhook \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{ "webhookUrl": "https://your-system.example.edu/timetable-hook" }'</code></pre>
+    <p>The response includes a <code>webhookSecret</code> starting with <code>whsec_</code>.</p>
+    <div class="warn">
+      <p><strong>Save the secret now. It is shown only once.</strong> You'll use it to check that messages
+        really come from the scheduler. If you lose it, send <code>"rotateSecret": true</code> to get a new one.
+        The old one stops working immediately.</p>
+    </div>
+    <p>The address must use <code>https</code> and be reachable from the internet. Private and local
+      addresses are refused.</p>
+
+    <h3 id="test-it">Test it</h3>
+    <pre><code>curl -X POST $BASE/api/schools/webhook/test -H "Authorization: Bearer $TOKEN"</code></pre>
+    <p>This sends one <code>WEBHOOK_TEST</code> message and tells you what your server replied.</p>
+
+    <h3>Change or turn off</h3>
+    <ul>
+      <li>See current settings: <code>GET /api/schools/webhook</code></li>
+      <li>Pause deliveries: send <code>"webhookEnabled": false</code></li>
+      <li>Remove it: send an empty <code>"webhookUrl": ""</code></li>
+    </ul>
+
+    <h2>What you'll receive</h2>
+    <p>Every message is a <code>POST</code> with a JSON body of the same shape:</p>
+    <pre><code>{
+  "event": "GENERATED_TIMETABLE",
+  "deliveryId": "8d0b...",
+  "schoolId": "4a1c...",
+  "timestamp": "2026-09-09T10:15:00Z",
+  "data": { ... }
+}</code></pre>
+
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>event</th><th>Sent when</th></tr></thead>
+        <tbody>
+          <tr><td><code>GENERATION_STARTED</code></td><td>The scheduler has started working on your timetable.</td></tr>
+          <tr><td><code>GENERATED_TIMETABLE</code></td><td>The timetable is ready. <code>data.entries</code> holds
+            every class with its day, start and end time, room and lecturer. Check <code>data.feasible</code>.</td></tr>
+          <tr><td><code>TIMETABLE_CONFLICTS</code></td><td>The timetable still has clashes, because the scheduler ran
+            out of time.</td></tr>
+          <tr><td><code>UNSCHEDULABLE_EVENTS</code></td><td>Some classes can't be placed anywhere, usually because of a
+            data problem. More time won't help. See <a href="troubleshooting.html#unscheduled">Troubleshooting</a>.</td></tr>
+          <tr><td><code>CONFLICT_MAP</code></td><td>Which sections can never share a time slot, and why.</td></tr>
+          <tr><td><code>GENERATION_FAILED</code></td><td>No timetable was produced.</td></tr>
+          <tr><td><code>BULK_UPLOAD_RESULT</code></td><td>A data upload finished.</td></tr>
+          <tr><td><code>WEBHOOK_TEST</code></td><td>You used the test endpoint.</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h2>Replying</h2>
+    <ul>
+      <li>Reply with any <code>2xx</code> status, such as <code>200</code>, as soon as you receive the
+        message. Do any slow work afterwards.</li>
+      <li>If your server is down or replies <code>5xx</code>, the message is sent again up to two more times,
+        after 2 and then 8 seconds.</li>
+      <li>A <code>4xx</code> reply is not retried.</li>
+      <li>A retried message keeps the same <code>deliveryId</code>. Use it to skip messages you've already
+        handled.</li>
+    </ul>
+
+    <h2>Checking a message is genuine</h2>
+    <p>Each message carries a signature header:</p>
+    <pre><code>X-Timetable-Signature: t=1757376000,v1=9f86d081884c7d65...</code></pre>
+    <p>To check it:</p>
+    <ol>
+      <li>Take <code>t</code> and the raw request body, exactly as received, and join them with a dot:
+        <code>t + "." + body</code>.</li>
+      <li>Compute an HMAC-SHA256 of that string using your <code>webhookSecret</code> as the key, and write it
+        as hex.</li>
+      <li>Compare it to <code>v1</code>. If they differ, ignore the message.</li>
+      <li>Also reject messages where <code>t</code> is more than about 5 minutes old.</li>
+    </ol>
+
+    <h3>Example in Node.js</h3>
+    <pre><code>const crypto = require('crypto');
+
+function isGenuine(rawBody, header, secret) {
+  const parts = Object.fromEntries(header.split(',').map(p =&gt; p.split('=')));
+  const expected = crypto.createHmac('sha256', secret)
+    .update(parts.t + '.' + rawBody)
+    .digest('hex');
+  const fresh = Math.abs(Date.now() / 1000 - Number(parts.t)) &lt; 300;
+  const given = Buffer.from(parts.v1 || '');
+  return fresh &amp;&amp; given.length === expected.length
+    &amp;&amp; crypto.timingSafeEqual(Buffer.from(expected), given);
+}</code></pre>
+
+    <h3>Example in Python</h3>
+    <pre><code>import hmac, hashlib, time
+
+def is_genuine(raw_body: bytes, header: str, secret: str) -&gt; bool:
+    parts = dict(p.split("=", 1) for p in header.split(","))
+    expected = hmac.new(secret.encode(), f"{parts['t']}.".encode() + raw_body,
+                        hashlib.sha256).hexdigest()
+    fresh = abs(time.time() - int(parts["t"])) &lt; 300
+    return fresh and hmac.compare_digest(expected, parts["v1"])</code></pre>
+
+    <p>Other headers on every message: <code>X-Timetable-Event</code>, <code>X-Timetable-Delivery</code>,
+      <code>X-Timetable-Attempt</code> and <code>X-Timetable-Timestamp</code>.</p>
+
+    <div class="pager">
+      <a href="generate.html">← Generating a timetable</a>
+      <a href="csv-reference.html">Next: Data fields →</a>
+    </div>
+  </main>
+</div>
+<script src="docs.js"></script>
+</body>
+</html>

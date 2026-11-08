@@ -24,6 +24,11 @@ public final class PublicEndpoints {
             "/v3/api-docs/**",
             "/api/auth/**",
             "/api/schools/create",
+            // The school-facing documentation: static pages, readable before an account exists.
+            // "/" only redirects there (see DocsRedirectConfig).
+            "/",
+            "/docs",
+            "/docs/**",
             // Render polls this as its healthCheckPath and cannot present a
             // token. management.endpoint.health.show-details=never keeps the
             // response to a bare UP/DOWN.

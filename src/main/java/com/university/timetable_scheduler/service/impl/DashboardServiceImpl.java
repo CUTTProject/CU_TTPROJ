@@ -32,7 +32,7 @@ public class DashboardServiceImpl implements DashboardService {
         UUID schoolId = TenantContext.getSchoolId();
 
         DashboardStatsResponse.Data responseData = new DashboardStatsResponse.Data();
-        responseData.setCurrentAcademicPeriod(academicPeriodMapper.toResponse(currentPeriod(schoolId)));
+        responseData.setCurrentAcademicPeriod(academicPeriodMapper.toResponse(currentPeriod(schoolId), LocalDateTime.now(clock)));
         responseData.setCourses(courseRepository.countLiveBySchoolId(schoolId));
         responseData.setLecturers(lecturerRepository.countLiveBySchoolId(schoolId));
         responseData.setRooms(roomRepository.countLiveBySchoolId(schoolId));

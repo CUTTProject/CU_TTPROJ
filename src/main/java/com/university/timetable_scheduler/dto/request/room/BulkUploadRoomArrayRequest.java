@@ -1,5 +1,6 @@
 package com.university.timetable_scheduler.dto.request.room;
 
+import com.fasterxml.jackson.annotation.JsonAlias;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
@@ -23,8 +24,10 @@ import java.util.List;
 @Setter
 public class BulkUploadRoomArrayRequest {
 
-    @NotEmpty(message = "rooms must not be empty")
-    private List<Row> rooms;
+    /** {@code "rooms"} is the original key, still accepted; every other upload says {@code "rows"}. */
+    @JsonAlias("rooms")
+    @NotEmpty(message = "rows must not be empty")
+    private List<Row> rows;
 
     /** The field names are the CSV column names. */
     @Schema(name = "BulkRoomRow")

@@ -40,6 +40,7 @@ public class EnrollmentServiceImpl implements EnrollmentService {
     private final StudentRepository studentRepository;
     private final SectionRepository sectionRepository;
     private final AcademicPeriodRepository academicPeriodRepository;
+    private final AcademicPeriodGuard academicPeriodGuard;
     private final EnrollmentMapper enrollmentMapper;
     private final SchoolRepository schoolRepository;
     private final BulkUploadSupport bulkUploadSupport;
@@ -56,6 +57,7 @@ public class EnrollmentServiceImpl implements EnrollmentService {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Student not found"));
         Section section = sectionRepository.findByIdAndSchoolId(request.getEnrollmentSectionId(), schoolId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Section not found"));
+        academicPeriodGuard.requireOpen(section);
         Enrollment entity = new Enrollment();
         entity.setSchool(currentSchool());
         entity.setEnrollmentStudent(student);
@@ -86,6 +88,7 @@ public class EnrollmentServiceImpl implements EnrollmentService {
         UUID schoolId = TenantContext.getSchoolId();
         Enrollment entity = enrollmentRepository.findByIdAndSchoolId(request.getId(), schoolId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Enrollment not found"));
+        academicPeriodGuard.requireOpen(entity.getEnrollmentSection());
         if (request.getEnrollmentStudentId() != null) {
             Student student = studentRepository.findByIdAndSchoolId(request.getEnrollmentStudentId(), schoolId)
                     .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Student not found"));
@@ -94,6 +97,7 @@ public class EnrollmentServiceImpl implements EnrollmentService {
         if (request.getEnrollmentSectionId() != null) {
             Section section = sectionRepository.findByIdAndSchoolId(request.getEnrollmentSectionId(), schoolId)
                     .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Section not found"));
+            academicPeriodGuard.requireOpen(section);
             entity.setEnrollmentSection(section);
         }
         UpdateEnrollmentResponse response = new UpdateEnrollmentResponse();
@@ -108,6 +112,7 @@ public class EnrollmentServiceImpl implements EnrollmentService {
     public DeleteEnrollmentResponse deleteEnrollment(DeleteEnrollmentRequest request) {
         Enrollment entity = enrollmentRepository.findByIdAndSchoolId(request.getId(), TenantContext.getSchoolId())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Enrollment not found"));
+        academicPeriodGuard.requireOpen(entity.getEnrollmentSection());
         entity.setIsDeleted(true);
         return new DeleteEnrollmentResponse();
     }
@@ -130,10 +135,13 @@ public class EnrollmentServiceImpl implements EnrollmentService {
                 (rows, report) -> processEnrollmentRows(rows, report, period));
     }
 
+    /** The period a bulk upload writes into. Dry runs are refused too: the answer would be no. */
     private AcademicPeriod findPeriod(UUID academicPeriodId) {
-        return academicPeriodRepository.findByIdAndSchoolId(academicPeriodId, TenantContext.getSchoolId())
+        AcademicPeriod period = academicPeriodRepository.findByIdAndSchoolId(academicPeriodId, TenantContext.getSchoolId())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
                         "Academic period not found: " + academicPeriodId));
+        academicPeriodGuard.requireOpen(period);
+        return period;
     }
 
     /**

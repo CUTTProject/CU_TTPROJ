@@ -26,6 +26,7 @@ import java.util.List;
 public class SectionLecturerServiceImpl implements SectionLecturerService {
     private final SectionLecturerRepository sectionLecturerRepository;
     private final SectionRepository sectionRepository;
+    private final AcademicPeriodGuard academicPeriodGuard;
     private final LecturerRepository lecturerRepository;
     private final SectionLecturerMapper sectionLecturerMapper;
     private final SchoolRepository schoolRepository;
@@ -39,6 +40,7 @@ public class SectionLecturerServiceImpl implements SectionLecturerService {
     public CreateSectionLecturerResponse createSectionLecturer(CreateSectionLecturerRequest request) {
         Section section = sectionRepository.findByIdAndSchoolId(request.getSectionLecturerSectionId(), TenantContext.getSchoolId())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Section not found"));
+        academicPeriodGuard.requireOpen(section);
         Lecturer lecturer = lecturerRepository.findByIdAndSchoolId(request.getSectionLecturerLecturerId(), TenantContext.getSchoolId())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Lecturer not found"));
         SectionLecturer entity = new SectionLecturer();
@@ -70,9 +72,11 @@ public class SectionLecturerServiceImpl implements SectionLecturerService {
     public UpdateSectionLecturerResponse updateSectionLecturer(UpdateSectionLecturerRequest request) {
         SectionLecturer entity = sectionLecturerRepository.findByIdAndSchoolId(request.getId(), TenantContext.getSchoolId())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "SectionLecturer not found"));
+        academicPeriodGuard.requireOpen(entity.getSectionLecturerSection());
         if (request.getSectionLecturerSectionId() != null) {
             Section section = sectionRepository.findByIdAndSchoolId(request.getSectionLecturerSectionId(), TenantContext.getSchoolId())
                     .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Section not found"));
+            academicPeriodGuard.requireOpen(section);
             entity.setSectionLecturerSection(section);
         }
         if (request.getSectionLecturerLecturerId() != null) {
@@ -92,6 +96,7 @@ public class SectionLecturerServiceImpl implements SectionLecturerService {
     public DeleteSectionLecturerResponse deleteSectionLecturer(DeleteSectionLecturerRequest request) {
         SectionLecturer entity = sectionLecturerRepository.findByIdAndSchoolId(request.getId(), TenantContext.getSchoolId())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "SectionLecturer not found"));
+        academicPeriodGuard.requireOpen(entity.getSectionLecturerSection());
         entity.setIsDeleted(true);
         return new DeleteSectionLecturerResponse();
     }

@@ -26,6 +26,7 @@ import java.util.List;
 public class SectionTimeslotServiceImpl implements SectionTimeslotService {
     private final SectionTimeslotRepository sectionTimeslotRepository;
     private final SectionRepository sectionRepository;
+    private final AcademicPeriodGuard academicPeriodGuard;
     private final TimeslotRepository timeslotRepository;
     private final SectionTimeslotMapper sectionTimeslotMapper;
     private final SchoolRepository schoolRepository;
@@ -39,6 +40,7 @@ public class SectionTimeslotServiceImpl implements SectionTimeslotService {
     public CreateSectionTimeslotResponse createSectionTimeslot(CreateSectionTimeslotRequest request) {
         Section section = sectionRepository.findByIdAndSchoolId(request.getSectionTimeslotSectionId(), TenantContext.getSchoolId())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Section not found"));
+        academicPeriodGuard.requireOpen(section);
         Timeslot timeslot = timeslotRepository.findByIdAndSchoolId(request.getSectionTimeslotTimeslotId(), TenantContext.getSchoolId())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Timeslot not found"));
         SectionTimeslot entity = new SectionTimeslot();
@@ -70,9 +72,11 @@ public class SectionTimeslotServiceImpl implements SectionTimeslotService {
     public UpdateSectionTimeslotResponse updateSectionTimeslot(UpdateSectionTimeslotRequest request) {
         SectionTimeslot entity = sectionTimeslotRepository.findByIdAndSchoolId(request.getId(), TenantContext.getSchoolId())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "SectionTimeslot not found"));
+        academicPeriodGuard.requireOpen(entity.getSectionTimeslotSection());
         if (request.getSectionTimeslotSectionId() != null) {
             Section section = sectionRepository.findByIdAndSchoolId(request.getSectionTimeslotSectionId(), TenantContext.getSchoolId())
                     .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Section not found"));
+            academicPeriodGuard.requireOpen(section);
             entity.setSectionTimeslotSection(section);
         }
         if (request.getSectionTimeslotTimeslotId() != null) {
@@ -92,6 +96,7 @@ public class SectionTimeslotServiceImpl implements SectionTimeslotService {
     public DeleteSectionTimeslotResponse deleteSectionTimeslot(DeleteSectionTimeslotRequest request) {
         SectionTimeslot entity = sectionTimeslotRepository.findByIdAndSchoolId(request.getId(), TenantContext.getSchoolId())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "SectionTimeslot not found"));
+        academicPeriodGuard.requireOpen(entity.getSectionTimeslotSection());
         entity.setIsDeleted(true);
         return new DeleteSectionTimeslotResponse();
     }
